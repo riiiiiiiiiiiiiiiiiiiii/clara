@@ -970,7 +970,7 @@ body {
         </div>
 
         <!-- Alter Ego Card -->
-        <div class="card" id="alterEgoCard" style="display:none;position:relative;overflow:hidden;">
+        <div class="card" id="alterEgoCard" style="display:none;position:relative;overflow:hidden;margin-bottom:28px;">
           <div id="alterEgoContent"></div>
         </div>
 
@@ -1125,7 +1125,7 @@ body {
           </div>
           <div class="cal-grid" id="calGrid"></div>
           <div class="phase-legend" style="margin-top:20px;">
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>🩸 Menstrual <span style="font-size:10px;color:var(--muted);">· red-pink</span></span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>Menstrual <span style="font-size:10px;color:var(--muted);">· red-pink</span></span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:#fce0e6;border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular)"></div> <span>🌱 Follicular <span style="font-size:10px;color:var(--muted);">· warm peach</span></span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory)"></div> <span>✨ Ovulatory <span style="font-size:10px;color:var(--muted);">· golden</span></span></div>
@@ -1210,7 +1210,7 @@ body {
 
       <div id="insightsPhaseView">
         <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;">
-          <button class="btn-secondary phase-tab" id="tab-menstrual" onclick="showInsight('menstrual')" style="border-color:var(--menstrual);color:var(--menstrual);background:var(--menstrual-light);">🩸 Menstrual</button>
+          <button class="btn-secondary phase-tab" id="tab-menstrual" onclick="showInsight('menstrual')" style="border-color:var(--menstrual);color:var(--menstrual);background:var(--menstrual-light);">Menstrual</button>
           <button class="btn-secondary phase-tab" id="tab-follicular" onclick="showInsight('follicular')" style="border-color:var(--follicular);color:var(--follicular);background:var(--follicular-light);">🌱 Follicular</button>
           <button class="btn-secondary phase-tab" id="tab-ovulatory" onclick="showInsight('ovulatory')" style="border-color:var(--ovulatory);color:var(--ovulatory);background:var(--ovulatory-light);">✨ Ovulatory</button>
           <button class="btn-secondary phase-tab" id="tab-luteal" onclick="showInsight('luteal')" style="border-color:var(--luteal);color:var(--luteal);background:var(--luteal-light);">🌙 Luteal</button>
@@ -1240,7 +1240,7 @@ body {
             <thead>
               <tr style="border-bottom:2px solid var(--border);">
                 <th style="text-align:left;padding:10px 12px;font-weight:500;color:var(--muted);letter-spacing:0.5px;">Hormone</th>
-                <th style="text-align:center;padding:10px 8px;color:var(--secondary);font-weight:600;">🩸 Menstrual</th>
+                <th style="text-align:center;padding:10px 8px;color:var(--secondary);font-weight:600;">Menstrual</th>
                 <th style="text-align:center;padding:10px 8px;color:var(--follicular);font-weight:600;">🌱 Follicular</th>
                 <th style="text-align:center;padding:10px 8px;color:var(--accent);font-weight:600;">✨ Ovulatory</th>
                 <th style="text-align:center;padding:10px 8px;color:var(--luteal);font-weight:600;">🌙 Luteal</th>
@@ -1393,7 +1393,7 @@ const HORMONE_BAR_COLORS = {
 const PHASES = {
   menstrual: {
     name: 'Menstrual',
-    emoji: '🩸',
+    emoji: '',
     alterEgo: 'The Oracle',
     alterEgoDesc: 'She doesn\'t have time for small talk. She sees through everything, needs nobody\'s approval, and is writing her manifesto in her head.',
     alterEgoPerks: ['Bullshit detector is fully calibrated', 'Zero tolerance for things that don\'t spark joy', 'Excellent at saying no', 'Would absolutely thrive in a cosy cabin alone'],
@@ -1637,7 +1637,7 @@ function updateSidebar() {
 
   const p = PHASES[info.phase];
   orb.style.background = `conic-gradient(#E8C84A ${(info.cycleDay/info.cycleLength)*360}deg, rgba(255,255,255,0.08) 0deg)`;
-  orb.innerHTML = `<div style="width:86px;height:86px;border-radius:50%;background:#1C3A35;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">${p.emoji}</div>`;
+  orb.innerHTML = `<div style="width:86px;height:86px;border-radius:50%;background:#1C3A35;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">${p.emoji || `<span style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--main);opacity:0.85;">${info.cycleDay}</span>`}</div>`;
   phaseName.textContent = p.name;
   dayCount.textContent = `Cycle Day ${info.cycleDay} of ${info.cycleLength}`;
 }
@@ -1699,7 +1699,7 @@ let selectedSymptoms = [];
 function updateLogPage() {
   document.getElementById('logDateDisplay').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
   const info = getCurrentCycleInfo();
-  document.getElementById('logPhaseDisplay').textContent = info ? `${PHASES[info.phase].emoji} ${PHASES[info.phase].name} Phase · Day ${info.cycleDay}` : 'Set up your cycle to see phase';
+  document.getElementById('logPhaseDisplay').textContent = info ? `${PHASES[info.phase].emoji ? PHASES[info.phase].emoji + ' ' : ''}${PHASES[info.phase].name} Phase · Day ${info.cycleDay}` : 'Set up your cycle to see phase';
 
   // Rebuild the form from today's stored log, so nothing carries over
   // from the last day logged in this session
@@ -2147,13 +2147,13 @@ function showInsight(phase) {
     tab.style.background = on ? pd.color : pd.light;
     tab.style.color = on ? '#fff' : pd.color;
     tab.style.fontWeight = on ? '500' : '300';
-    tab.textContent = `${pd.emoji} ${pd.name}${info && info.phase === ph ? ' · now' : ''}`;
+    tab.textContent = `${pd.emoji ? pd.emoji + ' ' : ''}${pd.name}${info && info.phase === ph ? ' · now' : ''}`;
   });
 
   const content = document.getElementById('insightContent');
   content.innerHTML = `
     <div style="padding:28px 32px;border-radius:20px;background:${p.light};border:1px solid ${p.mid};margin-bottom:24px;">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:${p.color};margin-bottom:8px;">${p.emoji} ${p.name} Phase</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:${p.color};margin-bottom:8px;">${p.emoji ? p.emoji + ' ' : ''}${p.name} Phase</div>
       <div style="font-size:14px;color:#1e2820;line-height:1.7;font-style:italic;">${p.tagline}</div>
       ${phaseDayRange(phase) ? `<div style="margin-top:14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:${p.color};opacity:0.75;">${phaseDayRange(phase)} of your cycle &middot; approx</div>` : ''}
     </div>
@@ -3598,7 +3598,7 @@ function renderAlterEgo(phase) {
       <div style="flex:1;min-width:200px;">
         <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Your phase alter ego</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:${p.textColor};margin-bottom:6px;">${p.alterEgo}</div>
-        <div style="font-size:13px;line-height:1.7;color:var(--text);margin-bottom:14px;font-style:italic;">"${p.alterEgoDesc}"</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text);margin-bottom:22px;font-style:italic;">"${p.alterEgoDesc}"</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Her superpowers</div>
