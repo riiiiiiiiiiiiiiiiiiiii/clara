@@ -527,6 +527,41 @@ body {
 .hormone-tab-btn:hover { border-color: var(--secondary); color: var(--secondary); }
 .hormone-tab-btn.active { background: var(--secondary); border-color: var(--secondary); color: var(--main); }
 
+/* ─── SUB-PAGE SWITCH ─── */
+/* Segmented control for switching between views inside one page. */
+.subnav {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 24px;
+  background: var(--menstrual-light);
+  border: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+.subnav-btn {
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  padding: 9px 22px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.subnav-btn:hover { color: var(--secondary); }
+.subnav-btn.active {
+  background: var(--secondary);
+  color: var(--main);
+  font-weight: 500;
+}
+@media (max-width: 720px) {
+  .subnav { display: flex; width: 100%; }
+  .subnav-btn { flex: 1; padding: 9px 12px; }
+}
+
 /* ─── HORMONE CARD ─── */
 .h-hero {
   border-radius: 20px;
@@ -932,7 +967,7 @@ body {
           <div class="card-subtitle" id="hormoneSubtitle">Set up your cycle to see hormone data</div>
           <div class="hormone-grid" id="hormoneGrid"></div>
           <div style="margin-top:14px;font-size:12px;">
-            <span onclick="showPage('insights')" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Read the hormone deep dive &rarr;</span>
+            <span onclick="openHormoneDeepDive()" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Read the hormone deep dive &rarr;</span>
           </div>
         </div>
         <div class="card">
@@ -1210,20 +1245,24 @@ body {
         <div class="page-subtitle">Everything about each phase, and the hormones behind it: mood, body &amp; performance</div>
       </div>
 
-      <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;">
-        <button class="btn-secondary" id="tab-menstrual" onclick="showInsight('menstrual')" style="border-color:var(--menstrual);color:var(--menstrual);">🩸 Menstrual</button>
-        <button class="btn-secondary" id="tab-follicular" onclick="showInsight('follicular')" style="border-color:var(--follicular);color:var(--follicular);">🌱 Follicular</button>
-        <button class="btn-secondary" id="tab-ovulatory" onclick="showInsight('ovulatory')" style="border-color:var(--ovulatory);color:var(--ovulatory);">✨ Ovulatory</button>
-        <button class="btn-secondary" id="tab-luteal" onclick="showInsight('luteal')" style="border-color:var(--luteal);color:var(--luteal);">🌙 Luteal</button>
+      <div class="subnav" id="insightsSubnav">
+        <button class="subnav-btn active" id="subtab-phases" onclick="showInsightsTab('phases')">Phases</button>
+        <button class="subnav-btn" id="subtab-hormones" onclick="showInsightsTab('hormones')">Hormones</button>
       </div>
 
-      <div id="insightContent"></div>
-
-      <div id="hormoneDeepDive" style="margin-top:40px;border-top:1px solid var(--border);padding-top:32px;">
-        <div class="page-header" style="margin-bottom:20px;">
-          <div class="page-title" style="font-size:32px;">Hormones <em>Deep Dive</em></div>
-          <div class="page-subtitle">The 6 hormones driving the phase above: what they are, what they do, and how they shift. Pick a phase and Clara opens its lead hormone.</div>
+      <div id="insightsPhaseView">
+        <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;">
+          <button class="btn-secondary" id="tab-menstrual" onclick="showInsight('menstrual')" style="border-color:var(--menstrual);color:var(--menstrual);">🩸 Menstrual</button>
+          <button class="btn-secondary" id="tab-follicular" onclick="showInsight('follicular')" style="border-color:var(--follicular);color:var(--follicular);">🌱 Follicular</button>
+          <button class="btn-secondary" id="tab-ovulatory" onclick="showInsight('ovulatory')" style="border-color:var(--ovulatory);color:var(--ovulatory);">✨ Ovulatory</button>
+          <button class="btn-secondary" id="tab-luteal" onclick="showInsight('luteal')" style="border-color:var(--luteal);color:var(--luteal);">🌙 Luteal</button>
         </div>
+
+        <div id="insightContent"></div>
+      </div>
+
+      <div id="insightsHormoneView" style="display:none;">
+        <div class="page-subtitle" id="hormoneViewSubtitle" style="margin-bottom:24px;">The 6 hormones driving your cycle: what they are, what they do, and how they shift.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;" id="hormoneTabBar">
           <button class="hormone-tab-btn active" onclick="showHormoneCard('oestrogen')">Oestrogen</button>
           <button class="hormone-tab-btn" onclick="showHormoneCard('progesterone')">Progesterone</button>
@@ -2129,6 +2168,34 @@ function changeMonth(dir) {
 }
 
 // ─── INSIGHTS ───
+// Phase Insights holds two views behind a segmented switch: the phase write-up
+// and the hormone deep dive. They used to be stacked, which meant scrolling the
+// whole phase page to reach the hormones.
+let insightsTab = 'phases';
+
+function showInsightsTab(tab) {
+  insightsTab = tab === 'hormones' ? 'hormones' : 'phases';
+  const onHormones = insightsTab === 'hormones';
+
+  const phaseView = document.getElementById('insightsPhaseView');
+  const hormoneView = document.getElementById('insightsHormoneView');
+  if (phaseView) phaseView.style.display = onHormones ? 'none' : '';
+  if (hormoneView) hormoneView.style.display = onHormones ? '' : 'none';
+
+  document.getElementById('subtab-phases')?.classList.toggle('active', !onHormones);
+  document.getElementById('subtab-hormones')?.classList.toggle('active', onHormones);
+
+  // Land at the top of the view just opened, not wherever the other one was left
+  document.querySelector('.main')?.scrollTo({ top: 0 });
+  window.scrollTo({ top: 0 });
+}
+
+// Used by the "Read the hormone deep dive" link on Today
+function openHormoneDeepDive() {
+  showPage('insights');
+  showInsightsTab('hormones');
+}
+
 function showInsight(phase) {
   currentInsight = phase;
   const p = PHASES[phase];
@@ -2161,9 +2228,13 @@ function showInsight(phase) {
     `).join('')}
   `;
 
-  // The hormone deep dive lives on this page now, so point it at the hormone
-  // that leads the phase the user just picked.
+  // Keep the Hormones view in step with the phase just picked: open that
+  // phase's lead hormone, so switching tabs shows something relevant.
   showHormoneCard(dominantHormoneForPhase(phase));
+  const sub = document.getElementById('hormoneViewSubtitle');
+  if (sub) {
+    sub.innerHTML = `The 6 hormones driving your cycle. Showing the one that leads your <strong style="color:${p.color};">${p.name.toLowerCase()}</strong> phase first &mdash; switch phase under Phases to change it.`;
+  }
 }
 
 // ─── SETUP ───
