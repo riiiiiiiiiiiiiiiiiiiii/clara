@@ -1264,43 +1264,6 @@ body {
           </div>
         </div>
 
-        <!-- What Clara Focuses On vs Flo -->
-        <div class="card" style="margin-top:20px;background:linear-gradient(135deg,var(--menstrual-light),var(--luteal-light));border-color:var(--menstrual-mid);">
-          <div class="card-title">Why Clara goes deeper than other apps</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
-            <div>
-              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Most period apps (Flo etc.)</div>
-              <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#1e2820;">
-                <div>✓ Period &amp; ovulation date predictions</div>
-                <div>✓ 70–80 symptom tags to log</div>
-                <div>✓ Fertile window tracking</div>
-                <div>✓ Pregnancy &amp; TTC modes</div>
-                <div>✓ Partner sharing</div>
-                <div>✓ Water/sleep/weight logging</div>
-                <div style="opacity:0.4;">✗ Hormone science explained</div>
-                <div style="opacity:0.4;">✗ Why you feel what you feel</div>
-                <div style="opacity:0.4;">✗ Hormone-performance links</div>
-                <div style="opacity:0.4;">✗ Individual hormone deep dives</div>
-              </div>
-            </div>
-            <div>
-              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Clara&apos;s focus</div>
-              <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#1e2820;">
-                <div>✓ Period &amp; cycle predictions</div>
-                <div>✓ Mood, energy &amp; symptom logging</div>
-                <div style="font-weight:500;color:var(--accent);">★ Each hormone explained in depth</div>
-                <div style="font-weight:500;color:var(--accent);">★ Real-time hormone levels per phase</div>
-                <div style="font-weight:500;color:var(--accent);">★ Why you feel exactly how you feel</div>
-                <div style="font-weight:500;color:var(--accent);">★ Performance, mood &amp; body impact</div>
-                <div style="font-weight:500;color:var(--accent);">★ Book-sourced science, not generic tips</div>
-                <div style="font-weight:500;color:var(--accent);">★ Hormone-by-hormone cycle map</div>
-              </div>
-            </div>
-          </div>
-          <div style="margin-top:20px;font-size:12px;color:var(--muted);font-style:italic;border-top:1px solid var(--border);padding-top:14px;">
-            What Clara doesn&apos;t yet have (compared to Flo): fertility/TTC mode, pregnancy tracking, BBT logging, partner mode, 80+ symptom tags, perimenopause tools, community/secret chats, birth control tracking. These could be added in future.
-          </div>
-        </div>
       </div>
     </div>
 
@@ -1401,28 +1364,6 @@ body {
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">How Phases Are Calculated</div>
-          <div class="card-subtitle">Understanding your four seasons</div>
-          <div class="phase-legend" style="gap:16px;">
-            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
-              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--menstrual)"></div><strong style="font-size:13px;">Menstrual</strong> <span style="font-size:12px;color:var(--muted);">Days 1–5 (approx)</span></div>
-              <div style="font-size:12px;color:var(--muted);padding-left:22px;">Hormone levels are at their lowest. The uterine lining sheds. A time for rest and inward reflection.</div>
-            </div>
-            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
-              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--follicular)"></div><strong style="font-size:13px;">Follicular</strong> <span style="font-size:12px;color:var(--muted);">Days 6–13 (approx)</span></div>
-              <div style="font-size:12px;color:var(--muted);padding-left:22px;">Oestrogen rises as follicles develop. Energy builds, mood lifts, creativity flourishes.</div>
-            </div>
-            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
-              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--ovulatory)"></div><strong style="font-size:13px;">Ovulatory</strong> <span style="font-size:12px;color:var(--muted);">Days 14–16 (approx)</span></div>
-              <div style="font-size:12px;color:var(--muted);padding-left:22px;">LH surges triggering egg release. Oestrogen and testosterone peak. Confidence and sociability are highest.</div>
-            </div>
-            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
-              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--luteal)"></div><strong style="font-size:13px;">Luteal</strong> <span style="font-size:12px;color:var(--muted);">Days 17–28 (approx)</span></div>
-              <div style="font-size:12px;color:var(--muted);padding-left:22px;">Progesterone rises then falls. Energy slows, sensitivity increases. The body prepares for the next cycle.</div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -1455,6 +1396,16 @@ let state = {
 let calViewDate = new Date();
 let currentInsight = 'menstrual';
 
+// Bar colours for the Today card. Distinct hues so the five bars stay
+// tellable apart; the levels and labels themselves come from HORMONE_DATA.
+const HORMONE_BAR_COLORS = {
+  oestrogen: '#e8758a',
+  progesterone: '#a08cd0',
+  fsh: '#e8a070',
+  lh: '#c9963a',
+  testosterone: '#7aaa6e',
+};
+
 // ─── PHASE DATA ───
 const PHASES = {
   menstrual: {
@@ -1470,11 +1421,11 @@ const PHASES = {
     textColor: 'var(--menstrual)',
     tagline: 'Your body is releasing. This is your winter, a time for rest, reflection, and deep inner knowing.',
     hormones: [
-      { name: 'Oestrogen', level: 8, label: 'Very Low', color: '#e8758a', desc: 'Oestrogen has dropped to its lowest point, signalling the uterine lining to shed. This withdrawal can cause fatigue, low mood, and that turned-inward feeling.' },
-      { name: 'Progesterone', level: 5, label: 'Very Low', color: '#a08cd0', desc: 'Progesterone has also collapsed. Its sudden fall is the key trigger for menstruation, and can bring emotional sensitivity, irritability, and disrupted sleep in the days just before.' },
-      { name: 'FSH', level: 30, label: 'Rising', color: '#e8a070', desc: 'Follicle-stimulating hormone begins climbing to recruit a new batch of follicles for the next cycle. The rebuild quietly begins even while you bleed.' },
-      { name: 'LH', level: 10, label: 'Low', color: '#c9963a', desc: 'Luteinising hormone stays low during menstruation, only surging at ovulation.' },
-      { name: 'Testosterone', level: 12, label: 'Low', color: '#7aaa6e', desc: 'Testosterone is low, contributing to lower libido and reduced drive: the body is conserving energy.' },
+      { key: 'oestrogen', desc: 'Oestrogen has dropped to its lowest point, signalling the uterine lining to shed. This withdrawal can cause fatigue, low mood, and that turned-inward feeling.' },
+      { key: 'progesterone', desc: 'Progesterone has also collapsed. Its sudden fall is the key trigger for menstruation, and can bring emotional sensitivity, irritability, and disrupted sleep in the days just before.' },
+      { key: 'fsh', desc: 'Follicle-stimulating hormone begins climbing to recruit a new batch of follicles for the next cycle. The rebuild quietly begins even while you bleed.' },
+      { key: 'lh', desc: 'Luteinising hormone stays low during menstruation, only surging at ovulation.' },
+      { key: 'testosterone', desc: 'Testosterone is low, contributing to lower libido and reduced drive: the body is conserving energy.' },
     ],
     expect: [
       '🛌 Energy is naturally lower. Honour rest without guilt',
@@ -1504,11 +1455,11 @@ const PHASES = {
     textColor: 'var(--follicular)',
     tagline: 'Your spring is here. Oestrogen is rising, your mind is sharpening, and possibilities feel real again.',
     hormones: [
-      { name: 'Oestrogen', level: 65, label: 'Rising', color: '#e8758a', desc: 'Oestrogen climbs steadily as follicles mature. This rising tide drives better mood, sharper cognition, improved skin, and a natural boost in motivation and confidence.' },
-      { name: 'Progesterone', level: 10, label: 'Low', color: '#a08cd0', desc: 'Progesterone stays low during the follicular phase: its absence means less bloating, better sleep, and a lighter emotional load.' },
-      { name: 'FSH', level: 60, label: 'Elevated', color: '#e8a070', desc: 'FSH is actively stimulating several follicles to grow, competing to be the one that releases an egg at ovulation. This follicular growth is what drives oestrogen production.' },
-      { name: 'LH', level: 20, label: 'Building', color: '#c9963a', desc: 'LH is building toward the surge that will trigger ovulation. Still low, but climbing.' },
-      { name: 'Testosterone', level: 35, label: 'Moderate', color: '#7aaa6e', desc: 'Testosterone begins to rise alongside oestrogen, adding to the overall sense of drive, focus, and libido.' },
+      { key: 'oestrogen', desc: 'Oestrogen climbs steadily as follicles mature. This rising tide drives better mood, sharper cognition, improved skin, and a natural boost in motivation and confidence.' },
+      { key: 'progesterone', desc: 'Progesterone stays low during the follicular phase: its absence means less bloating, better sleep, and a lighter emotional load.' },
+      { key: 'fsh', desc: 'FSH is actively stimulating several follicles to grow, competing to be the one that releases an egg at ovulation. This follicular growth is what drives oestrogen production.' },
+      { key: 'lh', desc: 'LH is building toward the surge that will trigger ovulation. Still low, but climbing.' },
+      { key: 'testosterone', desc: 'Testosterone begins to rise alongside oestrogen, adding to the overall sense of drive, focus, and libido.' },
     ],
     expect: [
       '⚡ Energy is building. Use it for new projects and goals',
@@ -1538,11 +1489,11 @@ const PHASES = {
     textColor: 'var(--ovulatory)',
     tagline: 'You\'re at your peak. Oestrogen and testosterone are high: charisma, confidence, and connection are your superpowers.',
     hormones: [
-      { name: 'Oestrogen', level: 92, label: 'Peak', color: '#e8758a', desc: 'Oestrogen hits its highest point just before ovulation. This surge triggers the LH spike that releases the egg. You may notice glowing skin, heightened attractiveness, and a strong pull toward connection.' },
-      { name: 'Progesterone', level: 15, label: 'Starting to Rise', color: '#a08cd0', desc: 'Progesterone begins a small pre-ovulatory rise, then surges post-ovulation as the corpus luteum forms. This early rise is calming without yet being sedating.' },
-      { name: 'FSH', level: 45, label: 'Dropping', color: '#e8a070', desc: 'FSH drops as one dominant follicle wins out and oestrogen feeds back to suppress it.' },
-      { name: 'LH', level: 95, label: '🔥 Peak Surge', color: '#c9963a', desc: 'The LH surge is the most dramatic hormonal event of the cycle, a spike of up to 10x baseline that triggers the egg\'s release within 24–36 hours. This is ovulation.' },
-      { name: 'Testosterone', level: 75, label: 'Elevated', color: '#7aaa6e', desc: 'Testosterone peaks alongside oestrogen during ovulation, driving libido, confidence, assertiveness, and a desire to be seen and social.' },
+      { key: 'oestrogen', desc: 'Oestrogen hits its highest point just before ovulation. This surge triggers the LH spike that releases the egg. You may notice glowing skin, heightened attractiveness, and a strong pull toward connection.' },
+      { key: 'progesterone', desc: 'Progesterone begins a small pre-ovulatory rise, then surges post-ovulation as the corpus luteum forms. This early rise is calming without yet being sedating.' },
+      { key: 'fsh', desc: 'FSH drops as one dominant follicle wins out and oestrogen feeds back to suppress it.' },
+      { key: 'lh', desc: 'The LH surge is the most dramatic hormonal event of the cycle, a spike of up to 10x baseline that triggers the egg\'s release within 24–36 hours. This is ovulation.' },
+      { key: 'testosterone', desc: 'Testosterone peaks alongside oestrogen during ovulation, driving libido, confidence, assertiveness, and a desire to be seen and social.' },
     ],
     expect: [
       '💬 Communication feels effortless, a great time for presentations or negotiations',
@@ -1572,11 +1523,11 @@ const PHASES = {
     textColor: 'var(--luteal)',
     tagline: 'Your autumn is here. Progesterone rises, energy turns inward. This phase asks for honesty, boundaries, and care.',
     hormones: [
-      { name: 'Oestrogen', level: 40, label: 'Declining', color: '#e8758a', desc: 'Oestrogen drops from its ovulatory peak, then has a secondary smaller rise mid-luteal before falling again. This decline can bring a dip in mood, energy, and cognitive sharpness compared to the follicular high.' },
-      { name: 'Progesterone', level: 80, label: 'Dominant', color: '#a08cd0', desc: 'Progesterone is the star of the luteal phase. Produced by the corpus luteum, it rises to support a potential pregnancy. It has a calming, sedating quality: it\'s thermogenic (raises body temperature), can cause bloating, breast tenderness, and fatigue, but also promotes a sense of calm when levels are balanced.' },
-      { name: 'FSH', level: 15, label: 'Low', color: '#e8a070', desc: 'FSH is suppressed during the luteal phase by rising progesterone, preventing a new cycle from beginning prematurely.' },
-      { name: 'LH', level: 12, label: 'Low', color: '#c9963a', desc: 'LH returns to baseline after its ovulatory surge.' },
-      { name: 'Testosterone', level: 30, label: 'Declining', color: '#7aaa6e', desc: 'Testosterone falls through the luteal phase, contributing to lower libido and slightly less assertiveness compared to the ovulatory window.' },
+      { key: 'oestrogen', desc: 'Oestrogen drops from its ovulatory peak, then has a secondary smaller rise mid-luteal before falling again. This decline can bring a dip in mood, energy, and cognitive sharpness compared to the follicular high.' },
+      { key: 'progesterone', desc: 'Progesterone is the star of the luteal phase. Produced by the corpus luteum, it rises to support a potential pregnancy. It has a calming, sedating quality: it\'s thermogenic (raises body temperature), can cause bloating, breast tenderness, and fatigue, but also promotes a sense of calm when levels are balanced.' },
+      { key: 'fsh', desc: 'FSH is suppressed during the luteal phase by rising progesterone, preventing a new cycle from beginning prematurely.' },
+      { key: 'lh', desc: 'LH returns to baseline after its ovulatory surge.' },
+      { key: 'testosterone', desc: 'Testosterone falls through the luteal phase, contributing to lower libido and slightly less assertiveness compared to the ovulatory window.' },
     ],
     expect: [
       '🌙 Energy slows and becomes more selective. Protect it wisely',
@@ -1596,9 +1547,14 @@ const PHASES = {
 };
 
 // ─── UTILITIES ───
-function today() {
-  const d = new Date();
+// Local-time YYYY-MM-DD. Deliberately not toISOString(), which would shift the
+// date across midnight for anyone behind UTC.
+function toISODate(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function today() {
+  return toISODate(new Date());
 }
 
 function parseDate(str) {
@@ -1735,21 +1691,24 @@ function updateToday() {
   document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay} · ${info.daysUntilNext} days until next period`;
   document.getElementById('todayTagline').textContent = p.tagline;
 
-  // Hormones
+  // Hormones. Levels and labels come from HORMONE_DATA, the same table the
+  // Insights deep dive reads, so the two screens can never disagree.
   const grid = document.getElementById('hormoneGrid');
   document.getElementById('hormoneSubtitle').textContent = `${p.name} phase: what\'s happening inside`;
-  grid.innerHTML = p.hormones.map(h => `
+  grid.innerHTML = p.hormones.map(h => {
+    const lvl = hormoneLevelFor(h.key, info.phase);
+    return `
     <div class="hormone-row">
       <div class="hormone-label">
-        <span class="hormone-name">${h.name}</span>
-        <span class="hormone-level">${h.label}</span>
+        <span class="hormone-name">${HORMONE_DATA[h.key].name}</span>
+        <span class="hormone-level">${lvl.label}</span>
       </div>
       <div class="hormone-track">
-        <div class="hormone-fill" style="width:${h.level}%;background:${h.color};"></div>
+        <div class="hormone-fill" style="width:${lvl.pct}%;background:${HORMONE_BAR_COLORS[h.key]};"></div>
       </div>
       <div class="hormone-desc">${h.desc}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   // Expect
   document.getElementById('expectList').innerHTML = p.expect.map(e => `<div>${e}</div>`).join('');
@@ -1860,12 +1819,9 @@ function addPeriodEntry(startInputId, endInputId) {
     existing.end = endVal;
   } else {
     state.periods.push({ start: startVal, end: endVal });
-    state.periods.sort((a,b) => a.start.localeCompare(b.start));
   }
 
-  // Keep periodStarts in sync
-  state.periodStarts = state.periods.map(p => p.start);
-  state.lastPeriodDate = state.periodStarts[state.periodStarts.length - 1];
+  normalisePeriods({ repointLastPeriod: true });
 
   // Recalculate avg cycle length from gaps
   if (state.periodStarts.length >= 2) {
@@ -1906,9 +1862,7 @@ function addPeriodStart() {
 
 function removePeriodStart(dateStr) {
   state.periods = state.periods.filter(p => p.start !== dateStr);
-  state.periodStarts = state.periods.map(p => p.start);
-  state.lastPeriodDate = state.periodStarts.length > 0
-    ? state.periodStarts[state.periodStarts.length - 1] : null;
+  normalisePeriods({ repointLastPeriod: true });
   save();
   updateAll();
   renderAllPeriodLists();
@@ -2166,6 +2120,24 @@ function openHormoneDeepDive() {
   showInsightsTab('hormones');
 }
 
+// The day ranges the old "How Phases Are Calculated" card listed as fixed text
+// (Days 1-5, 6-13, ...). Derived from the user's own cycle instead, so they
+// stay right for a 24-day cycle as much as a 34-day one.
+function phaseDayRange(phase) {
+  const cl = state.cycleLength || 28;
+  const pl = state.periodLength || 5;
+  const ov = getOvulationDay(cl, pl);
+  const ranges = {
+    menstrual:  [1, pl],
+    follicular: [pl + 1, ov - 1],
+    ovulatory:  [ov, ov + 1],
+    luteal:     [ov + 2, cl],
+  };
+  const r = ranges[phase];
+  if (!r || r[0] > r[1]) return '';
+  return r[0] === r[1] ? `Day ${r[0]}` : `Days ${r[0]}\u2013${r[1]}`;
+}
+
 function showInsight(phase) {
   currentInsight = phase;
   const p = PHASES[phase];
@@ -2188,6 +2160,7 @@ function showInsight(phase) {
     <div style="padding:28px 32px;border-radius:20px;background:${p.light};border:1px solid ${p.mid};margin-bottom:24px;">
       <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:${p.color};margin-bottom:8px;">${p.emoji} ${p.name} Phase</div>
       <div style="font-size:14px;color:#1e2820;line-height:1.7;font-style:italic;">${p.tagline}</div>
+      ${phaseDayRange(phase) ? `<div style="margin-top:14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:${p.color};opacity:0.75;">${phaseDayRange(phase)} of your cycle &middot; approx</div>` : ''}
     </div>
     ${p.insights.map(ins => `
       <div class="insight-card" style="background:${p.light};border:1px solid ${p.mid};">
@@ -2218,9 +2191,8 @@ function saveSetup() {
   // Ensure lastPeriodDate is in periods[] so calendar shows it
   if (!state.periods.find(p => p.start === val)) {
     state.periods.push({ start: val, end: null });
-    state.periods.sort((a,b) => a.start.localeCompare(b.start));
   }
-  state.periodStarts = state.periods.map(p => p.start);
+  normalisePeriods();
 
   save();
   updateAll();
@@ -2489,12 +2461,20 @@ function applyLoaded(loaded) {
   normalisePeriods();
 }
 
-function normalisePeriods() {
-  // Always keep periodStarts in sync from periods[]
-  state.periodStarts = state.periods.map(p => p.start).sort();
+// periodStarts is a flat mirror of periods[], kept for compatibility. Every
+// rebuild goes through here: a caller that syncs it by hand is how the two
+// drift apart and the calendar quietly starts drawing the wrong days.
+// repointLastPeriod moves lastPeriodDate to the newest start (use after adding
+// or removing one); otherwise it is only filled in when missing.
+function normalisePeriods(opts) {
+  const o = opts || {};
+  state.periods.sort((a, b) => a.start.localeCompare(b.start));
+  state.periodStarts = state.periods.map(p => p.start);
 
-  // If lastPeriodDate not set but we have periods, use most recent
-  if (!state.lastPeriodDate && state.periodStarts.length > 0) {
+  if (o.repointLastPeriod) {
+    state.lastPeriodDate = state.periodStarts.length
+      ? state.periodStarts[state.periodStarts.length - 1] : null;
+  } else if (!state.lastPeriodDate && state.periodStarts.length > 0) {
     state.lastPeriodDate = state.periodStarts[state.periodStarts.length - 1];
   }
 }
@@ -3078,14 +3058,21 @@ function parseFloJSON(text) {
     if (lengths.length > 0) periodLength = Math.round(lengths.reduce((a,b)=>a+b,0) / lengths.length);
   }
 
+  return floResult(periodStarts, avgCycleLength, periodLength, 'json');
+}
+
+// Both Flo parsers hand back the same shape, with the same clamping and the
+// same year-range formatting.
+function floResult(periodStarts, avgCycleLength, periodLength, source) {
   return {
     mostRecentPeriod: periodStarts[periodStarts.length - 1],
     allPeriodStarts: periodStarts,
     totalPeriods: periodStarts.length,
     avgCycleLength: Math.min(Math.max(avgCycleLength, 18), 60),
     periodLength,
-    source: 'json',
-    yearRange: periodStarts.length > 0 ? `${periodStarts[0].slice(0,4)} – ${periodStarts[periodStarts.length-1].slice(0,4)}` : '',
+    source,
+    yearRange: periodStarts.length > 0
+      ? `${periodStarts[0].slice(0,4)} \u2013 ${periodStarts[periodStarts.length-1].slice(0,4)}` : '',
   };
 }
 
@@ -3165,8 +3152,7 @@ function parseFloCSV(text) {
   }
 
   function toISO(d) {
-    if (!d || isNaN(d.getTime())) return null;
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return (!d || isNaN(d.getTime())) ? null : toISODate(d);
   }
 
   // STRATEGY A: One row per period start (cycle summary CSV)
@@ -3267,15 +3253,7 @@ function parseFloCSV(text) {
     ? Math.round(cycleLengthsFromFile.reduce((a,b)=>a+b,0) / cycleLengthsFromFile.length)
     : 28;
 
-  return {
-    mostRecentPeriod: periodStarts[periodStarts.length - 1],
-    allPeriodStarts: periodStarts,
-    totalPeriods: periodStarts.length,
-    avgCycleLength: Math.min(Math.max(avgCycleLength, 18), 60),
-    periodLength: 5,
-    source: 'csv',
-    yearRange: periodStarts.length > 0 ? `${periodStarts[0].slice(0,4)} – ${periodStarts[periodStarts.length-1].slice(0,4)}` : '',
-  };
+  return floResult(periodStarts, avgCycleLength, 5, 'csv');
 }
 
 function showFloStatus(type, msg) {
@@ -3517,6 +3495,15 @@ const HORMONE_TABLE_ROWS = [
 ];
 
 // Which hormone is highest in the phase the user is in right now
+// One source of truth for "how high is this hormone in this phase".
+// Used by the Today card and by the Insights deep dive.
+function hormoneLevelFor(key, phase) {
+  const label = phase.charAt(0).toUpperCase() + phase.slice(1);
+  const h = HORMONE_DATA[key];
+  const lvl = h && (h.cycleLevels || []).find(cl => cl.phase === label);
+  return lvl || { pct: 0, label: '' };
+}
+
 // The hormone running the show in a given phase: the one sitting highest
 // on its own cycle curve there.
 function dominantHormoneForPhase(phase) {
@@ -3690,7 +3677,6 @@ function renderPredictions(info) {
     phaseMoodMap[ph].push(log.mood);
   });
 
-  const moodScore = { radiant:5, good:4, neutral:3, low:2, difficult:1 };
   const moodLabel = { 5:'radiant 😄', 4:'pretty good 🙂', 3:'fairly neutral 😐', 2:'a bit low 😔', 1:'rough 😞' };
 
   function avgMoodForPhase(phase) {
@@ -3804,7 +3790,6 @@ function renderFunStats() {
     .sort((a,b) => b[1]-a[1])[0];
 
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const moodScore = { radiant:5, good:4, neutral:3, low:2, difficult:1 };
   const bestDow = dayOfWeekMood
     .map((moods, i) => [i, moods.length ? moods.reduce((a,m)=>a+(moodScore[m]||3),0)/moods.length : 0])
     .filter(([,v]) => v > 0)
@@ -3855,6 +3840,9 @@ function showTodayTab(tab) {
 
 // ─── HISTORY PAGE ───
 let historyFilter = 'all';
+
+// Ranking used to average moods and to draw the mood-over-time strip.
+const moodScore = { radiant: 5, good: 4, neutral: 3, low: 2, difficult: 1 };
 
 const MOOD_META = {
   radiant:   { emoji: '😄', color: '#4A8C5C', bg: '#eef7f1', label: 'Radiant' },
