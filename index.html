@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Clara">
-<meta name="theme-color" content="#A63D52">
+<meta name="theme-color" content="#f9f5ef">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -42,6 +42,17 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Headings and labels for screen readers, off-screen but not hidden from them. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 body {
   background: var(--bg);
@@ -927,6 +938,7 @@ body {
 
     <!-- TODAY PAGE -->
     <div class="page active" id="page-today">
+      <h1 class="sr-only">Today</h1>
       <div class="subnav" id="todaySubnav">
         <button class="subnav-btn active" id="subtab-today" onclick="showTodayTab('today')">Today</button>
         <button class="subnav-btn" id="subtab-log" onclick="showTodayTab('log')">Log</button>
@@ -995,7 +1007,7 @@ body {
           <label class="form-label">Energy Level</label>
           <div class="slider-wrap">
             <span style="font-size:12px;color:var(--muted);">Low</span>
-            <input type="range" id="energySlider" min="1" max="10" value="5" oninput="document.getElementById('energyVal').textContent=this.value">
+            <input type="range" id="energySlider" aria-label="Energy level, 1 to 10" min="1" max="10" value="5" oninput="document.getElementById('energyVal').textContent=this.value">
             <span style="font-size:12px;color:var(--muted);">High</span>
             <span class="slider-val" id="energyVal">5</span>
           </div>
@@ -1026,7 +1038,7 @@ body {
           <label class="form-label">How bad were the cramps?</label>
           <div class="slider-wrap">
             <span style="font-size:12px;color:var(--muted);">Mild</span>
-            <input type="range" id="painSlider" min="1" max="10" value="5" oninput="document.getElementById('painVal').textContent=this.value">
+            <input type="range" id="painSlider" aria-label="Cramp pain, 1 to 10" min="1" max="10" value="5" oninput="document.getElementById('painVal').textContent=this.value">
             <span style="font-size:12px;color:var(--muted);">Severe</span>
             <span class="slider-val" id="painVal">5</span>
           </div>
@@ -1035,7 +1047,7 @@ body {
 
         <div class="form-section">
           <label class="form-label">Notes (optional)</label>
-          <textarea id="logNotes" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:80px;line-height:1.6;" placeholder="Anything else you'd like to remember..."></textarea>
+          <textarea id="logNotes" aria-label="Notes for today" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:80px;line-height:1.6;" placeholder="Anything else you'd like to remember..."></textarea>
         </div>
 
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
@@ -1108,6 +1120,7 @@ body {
 
     <!-- CALENDAR PAGE -->
     <div class="page" id="page-calendar">
+      <h1 class="sr-only">Calendar</h1>
       <div class="grid-2">
         <div class="card">
           <div class="cal-header">
@@ -1162,7 +1175,7 @@ body {
             <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--accent);margin-bottom:6px;">Drop your file here</div>
             <div style="font-size:12px;color:var(--muted);">or click to browse &middot; accepts .json or .csv</div>
           </div>
-          <input type="file" id="floFileInput" accept=".json,.csv" style="display:none;" onchange="handleFloFile(event)">
+          <input type="file" id="floFileInput" aria-label="Choose an export file to import" accept=".json,.csv" style="display:none;" onchange="handleFloFile(event)">
           <div id="floStatus" style="display:none;padding:16px;border-radius:10px;font-size:13px;line-height:1.7;"></div>
           <div id="floPreview" style="display:none;">
             <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--accent);margin-bottom:12px;">Found in your data</div>
@@ -1189,6 +1202,7 @@ body {
 
     <!-- INSIGHTS PAGE -->
     <div class="page" id="page-insights">
+      <h1 class="sr-only">Insights</h1>
       <div class="subnav" id="insightsSubnav">
         <button class="subnav-btn active" id="subtab-phases" onclick="showInsightsTab('phases')">Phases</button>
         <button class="subnav-btn" id="subtab-hormones" onclick="showInsightsTab('hormones')">Hormones</button>
@@ -1248,6 +1262,7 @@ body {
 
     <!-- SETUP PAGE -->
     <div class="page" id="page-setup">
+      <h1 class="sr-only">My Cycle</h1>
       <div class="setup-wrap">
         <div class="card" style="margin-bottom:20px;">
           <div class="card-title">Cycle Details</div>
@@ -1255,7 +1270,7 @@ body {
 
           <div class="setup-field">
             <label class="setup-label">First day of last period</label>
-            <input class="setup-input" type="date" id="lastPeriodInput">
+            <input class="setup-input" type="date" id="lastPeriodInput" aria-label="First day of last period">
             <div class="setup-hint">This is Day 1 of your current cycle</div>
           </div>
 
@@ -1263,7 +1278,7 @@ body {
             <label class="setup-label">Average cycle length (days)</label>
             <div class="slider-wrap">
               <span style="font-size:12px;color:var(--muted);">21</span>
-              <input type="range" id="cycleLengthSlider" min="21" max="40" value="28" oninput="document.getElementById('cycleLengthVal').textContent=this.value">
+              <input type="range" id="cycleLengthSlider" aria-label="Average cycle length in days" min="21" max="40" value="28" oninput="document.getElementById('cycleLengthVal').textContent=this.value">
               <span style="font-size:12px;color:var(--muted);">40</span>
               <span class="slider-val" id="cycleLengthVal">28</span>
             </div>
@@ -1274,7 +1289,7 @@ body {
             <label class="setup-label">Average period length (days)</label>
             <div class="slider-wrap">
               <span style="font-size:12px;color:var(--muted);">2</span>
-              <input type="range" id="periodLengthSlider" min="2" max="8" value="5" oninput="document.getElementById('periodLengthVal').textContent=this.value">
+              <input type="range" id="periodLengthSlider" aria-label="Average period length in days" min="2" max="8" value="5" oninput="document.getElementById('periodLengthVal').textContent=this.value">
               <span style="font-size:12px;color:var(--muted);">8</span>
               <span class="slider-val" id="periodLengthVal">5</span>
             </div>
@@ -1313,7 +1328,7 @@ body {
           <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
             <button class="btn-secondary" onclick="exportData()" style="font-size:12px;padding:8px 16px;">⬇ Export backup</button>
             <button class="btn-secondary" onclick="document.getElementById('importBackupInput').click()" style="font-size:12px;padding:8px 16px;">⬆ Restore backup</button>
-            <input type="file" id="importBackupInput" accept=".json" style="display:none;" onchange="importBackup(event)">
+            <input type="file" id="importBackupInput" aria-label="Choose a backup file to restore" accept=".json" style="display:none;" onchange="importBackup(event)">
             <button class="btn-secondary" onclick="protectMyData()" style="font-size:12px;padding:8px 16px;">🔒 Protect my data</button>
             <button class="btn-secondary" onclick="repairStorage()" style="font-size:12px;padding:8px 16px;">↻ Check &amp; repair</button>
           </div>
@@ -1536,9 +1551,6 @@ function parseDate(str) {
   return new Date(y, m-1, d);
 }
 
-function formatDate(d) {
-  return d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-}
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({
@@ -1835,10 +1847,6 @@ function addPeriodEntry(startInputId, endInputId) {
   showToast('🩸 Period saved');
 }
 
-// Legacy compat for the period toggle button on the Log tab
-function addPeriodStartFrom(startId, endId) {
-  addPeriodEntry(startId, endId || startId.replace('Start','End').replace('Input','EndInput'));
-}
 function addPeriodStart() {
   const val = document.getElementById('periodStartInput')?.value;
   if (!val) { showToast('Please pick a date first'); return; }
@@ -2215,7 +2223,10 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   const navItems = document.querySelectorAll('.nav-item');
   const pages = ['today','calendar','insights','setup'];
-  navItems[pages.indexOf(name)]?.classList.add('active');
+  navItems.forEach(n => n.removeAttribute('aria-current'));
+  const current = navItems[pages.indexOf(name)];
+  current?.classList.add('active');
+  current?.setAttribute('aria-current', 'page');
 
   if (name === 'calendar') renderCalendar();
   if (name === 'insights') showInsight(getCurrentCycleInfo()?.phase || currentInsight);
@@ -3513,9 +3524,6 @@ function dominantHormoneForPhase(phase) {
   return best || 'oestrogen';
 }
 
-function dominantHormoneKey() {
-  return dominantHormoneForPhase(getCurrentCycleInfo()?.phase);
-}
 
 function showHormoneCard(key) {
   // Update tab buttons
@@ -3581,20 +3589,9 @@ function showHormoneCard(key) {
 
 // ─── FUN FEATURES ───
 
-const ACHIEVEMENTS = [
-  { id: 'first_log',    icon: '🌱', name: 'First Entry',      desc: 'You started. That\'s everything.',           check: (s) => Object.keys(s.logs).length >= 1 },
-  { id: 'moods_5',      icon: '🎭', name: 'Full Spectrum',     desc: 'Logged all 5 mood types.',                   check: (s) => new Set(Object.values(s.logs).map(l=>l.mood).filter(Boolean)).size >= 5 },
-  { id: 'notes_10',     icon: '📓', name: 'Dear Diary',        desc: '10 entries with notes.',                     check: (s) => Object.values(s.logs).filter(l=>l.notes?.trim()).length >= 10 },
-  { id: 'symptoms_all', icon: '🔬', name: 'Body Detective',    desc: 'Logged 10 different symptoms.',              check: (s) => new Set(Object.values(s.logs).flatMap(l=>l.symptoms||[])).size >= 10 },
-  { id: 'periods_6',    icon: '🗓️', name: 'Historian',         desc: 'Logged 6 or more periods.',                  check: (s) => (s.periods||[]).length >= 6 },
-  { id: 'periods_12',   icon: '💫', name: 'Year in Review',    desc: 'A full year of period history.',             check: (s) => (s.periods||[]).length >= 12 },
-];
 
 
 
-function getEarnedAchievements() {
-  return ACHIEVEMENTS.filter(a => { try { return a.check(state); } catch(e) { return false; } });
-}
 
 function renderAlterEgo(phase) {
   const p = PHASES[phase];
@@ -3707,6 +3704,11 @@ function renderFunStats() {
     return;
   }
 
+  const painScores = allLogs.map(l => l.pain).filter(p => typeof p === 'number');
+  const avgPain = painScores.length
+    ? (painScores.reduce((a, b) => a + b, 0) / painScores.length)
+    : null;
+
   const moodCounts = {};
   const energyByPhase = { menstrual:[], follicular:[], ovulatory:[], luteal:[] };
   const dayOfWeekMood = Array.from({length:7}, () => []);
@@ -3746,6 +3748,7 @@ function renderFunStats() {
     highestEnergyPhase ? `⚡ Most energetic phase: <strong>${highestEnergyPhase[0]}</strong> (avg ${highestEnergyPhase[1].toFixed(1)}/10)` : null,
     bestDow ? `📅 Best day of the week: <strong>${dayNames[bestDow[0]]}</strong>` : null,
     topSymptom ? `🔁 Most logged symptom: <strong>${topSymptom[0]}</strong> (${topSymptom[1]}×)` : null,
+    avgPain !== null ? `💧 Average cramp pain: <strong>${avgPain.toFixed(1)}/10</strong> across ${painScores.length} day${painScores.length === 1 ? '' : 's'}` : null,
   ].filter(Boolean);
 
   document.getElementById('funStatsContent').innerHTML = `
@@ -3916,6 +3919,10 @@ function renderHistory() {
            </div>`
         : '';
 
+      const painBadge = log.pain
+        ? `<span style="font-size:11px;padding:3px 9px;border-radius:8px;background:var(--menstrual-light);color:var(--menstrual);border:1px solid var(--menstrual-mid);">Cramp pain ${log.pain}/10</span>`
+        : '';
+
       const notes = log.notes && log.notes.trim()
         ? `<div class="history-notes">${escapeHtml(log.notes.trim())}</div>`
         : '';
@@ -3924,7 +3931,7 @@ function renderHistory() {
         <div class="history-entry">
           <div class="history-entry-date">${dateLabel}</div>
           <div class="history-entry-meta">
-            ${moodBadge}${phaseBadge}${energyBar}
+            ${moodBadge}${phaseBadge}${painBadge}${energyBar}
           </div>
           ${symptoms}
           ${notes}
@@ -3968,6 +3975,16 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('beforeunload', () => { save(); });
 window.addEventListener('pagehide', () => { save(); });
+// Offline support. Needs http(s), so it simply does not engage when the file
+// is opened straight from disk.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Clara: offline support ready'))
+      .catch(e => console.warn('Clara: offline support unavailable:', e));
+  });
+}
+
 // showInsight also fills in the hormone deep dive below it
 showInsight(getCurrentCycleInfo()?.phase || 'menstrual');
 showTodayTab('today');
