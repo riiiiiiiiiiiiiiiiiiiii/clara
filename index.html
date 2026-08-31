@@ -974,11 +974,6 @@ body {
           <div id="alterEgoContent"></div>
         </div>
 
-        <!-- Prediction Card -->
-        <div class="card" id="predictionCard" style="display:none;">
-          <div id="predictionContent"></div>
-        </div>
-
         <!-- Fun stats -->
         <div id="funStatsRow" style="display:none;">
           <div class="card" id="funStatsCard">
@@ -1058,7 +1053,7 @@ body {
         <!-- Period logger panel -->
         <div id="periodLoggerPanel" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:20px;">
           <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--secondary);margin-bottom:6px;">Log a Period</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Add any past or present period. Nothing gets overwritten.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Add any past or present period.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;flex-wrap:wrap;">
             <div>
               <label class="form-label">Started</label>
@@ -1225,7 +1220,6 @@ body {
       </div>
 
       <div id="insightsHormoneView" style="display:none;">
-        <div id="hormoneViewSubtitle" style="font-size:12px;color:var(--muted);margin-bottom:20px;"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;" id="hormoneTabBar">
           <button class="hormone-tab-btn active" onclick="showHormoneCard('oestrogen')">Oestrogen</button>
           <button class="hormone-tab-btn" onclick="showHormoneCard('progesterone')">Progesterone</button>
@@ -1669,7 +1663,7 @@ function updateToday() {
   banner.style.background = p.light;
   document.getElementById('todayPhaseName').style.color = p.color;
   document.getElementById('todayPhaseName').textContent = `${p.name} Phase`;
-  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay} · ${info.daysUntilNext} days until next period`;
+  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay}`;
   document.getElementById('todayTagline').textContent = p.tagline;
 
   // Hormones. Levels and labels come from HORMONE_DATA, the same table the
@@ -1696,7 +1690,6 @@ function updateToday() {
 
   // Phase alter ego + what's coming next
   renderAlterEgo(info.phase);
-  renderPredictions(info);
 }
 
 // ─── LOG PAGE ───
@@ -2176,10 +2169,6 @@ function showInsight(phase) {
   // Keep the Hormones view in step with the phase just picked: open that
   // phase's lead hormone, so switching tabs shows something relevant.
   showHormoneCard(dominantHormoneForPhase(phase));
-  const sub = document.getElementById('hormoneViewSubtitle');
-  if (sub) {
-    sub.innerHTML = `Showing the hormone that leads your <strong style="color:${p.color};">${p.name.toLowerCase()}</strong> phase &mdash; change phase under Phases.`;
-  }
 }
 
 // ─── SETUP ───
@@ -3625,73 +3614,6 @@ function renderAlterEgo(phase) {
   `;
 }
 
-function renderPredictions(info) {
-  if (!info) return;
-  const card = document.getElementById('predictionCard');
-  card.style.display = 'block';
-
-  const logs = state.logs || {};
-  const allLogs = Object.values(logs);
-
-  // Calculate average mood per phase from history
-  const phaseMoodMap = {};
-  Object.entries(logs).forEach(([d, log]) => {
-    const ph = log.phase;
-    if (!ph || !log.mood) return;
-    if (!phaseMoodMap[ph]) phaseMoodMap[ph] = [];
-    phaseMoodMap[ph].push(log.mood);
-  });
-
-  const moodLabel = { 5:'radiant 😄', 4:'pretty good 🙂', 3:'fairly neutral 😐', 2:'a bit low 😔', 1:'rough 😞' };
-
-  function avgMoodForPhase(phase) {
-    const moods = phaseMoodMap[phase];
-    if (!moods || moods.length < 2) return null;
-    const avg = moods.reduce((a,m) => a + (moodScore[m]||3), 0) / moods.length;
-    return moodLabel[Math.round(avg)] || null;
-  }
-
-  // Next phase
-  const cl = state.cycleLength || 28;
-  const pl = state.periodLength || 5;
-  const nextPhase = getPhaseForDay(((info.cycleDay) % cl) + 1, cl, pl);
-  const daysToNextPhase = (() => {
-    for (let i = 1; i <= cl; i++) {
-      const ph = getPhaseForDay(info.cycleDay + i, cl, pl);
-      if (ph !== info.phase) return i;
-    }
-    return cl;
-  })();
-
-  const nextP = PHASES[nextPhase];
-  const nextMood = avgMoodForPhase(nextPhase);
-  const nextMoodLine = nextMood && allLogs.length >= 5
-    ? `Based on your history, you tend to feel <strong>${nextMood}</strong> during this phase.`
-    : `You'll be entering your ${nextP.name} phase.`;
-
-  // Most common upcoming symptom
-  const upcomingSymptoms = (phaseMoodMap[nextPhase] || []).length > 0
-    ? Object.entries(
-        Object.values(logs)
-          .filter(l => l.phase === nextPhase && l.symptoms?.length)
-          .flatMap(l => l.symptoms)
-          .reduce((acc, s) => { acc[s]=(acc[s]||0)+1; return acc; }, {})
-      ).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([s])=>s)
-    : [];
-
-  const symptomLine = upcomingSymptoms.length
-    ? `You've often reported <strong>${upcomingSymptoms.join(' and ')}</strong> during this phase.`
-    : '';
-
-  document.getElementById('predictionContent').innerHTML = `
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Coming up in ${daysToNextPhase} day${daysToNextPhase!==1?'s':''}</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:21px;color:${nextP.textColor};">${nextP.emoji} Your ${nextP.name.toLowerCase()} phase${nextP.alterEgo ? ` &middot; <span style="font-style:italic;opacity:0.8;">${nextP.alterEgo}</span>` : ''}</div>
-    </div>
-    <div style="font-size:13px;line-height:1.8;color:var(--text);">${nextMoodLine}${symptomLine ? '<br>' + symptomLine : ''}</div>
-    ${allLogs.length < 5 ? '<div style="margin-top:8px;font-size:11px;color:var(--muted);font-style:italic;">Log more days to unlock personalised predictions based on your real patterns.</div>' : ''}
-  `;
-}
 
 
 function renderFunStats() {
