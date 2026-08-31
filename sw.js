@@ -8,7 +8,7 @@
 //     online load rather than being pinned to whatever was cached first
 //   - icons, the manifest and webfonts are cache-first, since they change
 //     rarely and this is what makes a cold offline launch fast
-const VERSION = 'clara-v2';
+const VERSION = 'clara-v3';
 
 const CORE = [
   './',
