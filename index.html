@@ -2754,7 +2754,8 @@ function renderStorageInfo() {
       <div class="stat-row"><span class="stat-label">Days logged</span><span class="stat-val">${logCount}</span></div>
       <div class="stat-row"><span class="stat-label">Periods recorded</span><span class="stat-val">${periodCount}</span></div>
       <div class="stat-row"><span class="stat-label">Storage used</span><span class="stat-val">${sizeKB} KB</span></div>
-      <div class="stat-row" style="border:none;"><span class="stat-label">Last saved</span><span class="stat-val">${lastSave}</span></div>
+      <div class="stat-row"><span class="stat-label">Last saved</span><span class="stat-val">${lastSave}</span></div>
+      <div class="stat-row" style="border:none;"><span class="stat-label">App version</span><span class="stat-val" style="font-size:12px;">${CLARA_BUILD}</span></div>
     </div>
     <div style="margin-top:12px;font-size:12px;color:var(--text);line-height:1.9;">
       <div style="font-weight:600;margin-bottom:2px;">Where your data lives</div>
@@ -3975,12 +3976,34 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('beforeunload', () => { save(); });
 window.addEventListener('pagehide', () => { save(); });
-// Offline support. Needs http(s), so it simply does not engage when the file
-// is opened straight from disk.
+// Which build is running. Shown in My Cycle so a stale copy is obvious.
+const CLARA_BUILD = '2026-08-31 15:13';
+
+// Offline support, and keeping an installed home-screen app current.
+// iOS caches a standalone web app far harder than it caches the same page in
+// Safari, so without this an installed Clara can sit on an old copy for days.
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  let reloadingForUpdate = false;
+
+  // A new worker taking over means new content is ready: show it at once.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloadingForUpdate) return;
+    reloadingForUpdate = true;
+    console.log('Clara: new version activated, reloading');
+    location.reload();
+  });
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('Clara: offline support ready'))
+      .then(reg => {
+        console.log('Clara: offline support ready, build', CLARA_BUILD);
+        reg.update().catch(() => {});
+        // Re-check every time the app is brought back to the foreground, which
+        // for a home-screen app is the only reliable moment to catch updates.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      })
       .catch(e => console.warn('Clara: offline support unavailable:', e));
   });
 }
