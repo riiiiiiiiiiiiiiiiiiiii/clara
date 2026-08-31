@@ -7,16 +7,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Clara">
 <meta name="theme-color" content="#A63D52">
-<link rel="manifest" href="data:application/json,{
-  &quot;name&quot;: &quot;Clara&quot;,
-  &quot;short_name&quot;: &quot;Clara&quot;,
-  &quot;description&quot;: &quot;Your hormone-aware cycle companion&quot;,
-  &quot;start_url&quot;: &quot;.&quot;,
-  &quot;display&quot;: &quot;standalone&quot;,
-  &quot;background_color&quot;: &quot;#f9f5ef&quot;,
-  &quot;theme_color&quot;: &quot;#A63D52&quot;,
-  &quot;icons&quot;: []
-}">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>Clara: Know Your Cycle</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -81,6 +75,17 @@ body {
   font-weight: 700;
   font-style: italic;
   letter-spacing: 2px;
+  color: var(--main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The app mark: the cycle as four phase arcs. Same drawing as the PWA icon. */
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
   color: var(--main);
 }
 
@@ -884,7 +889,7 @@ body {
 
   <!-- ─── SIDEBAR ─── -->
   <aside class="sidebar">
-    <div class="brand" onclick="showPage('today')" style="cursor:pointer;" title="Go to Today">Clara</div>
+    <div class="brand" onclick="showPage('today')" style="cursor:pointer;" title="Go to Today"><svg class="brand-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M 277.99 99.54 A 158.00 158.00 0 0 1 412.46 234.01" stroke="#C0364A" stroke-width="34" stroke-linecap="round" fill="none"/><path d="M 412.46 277.99 A 158.00 158.00 0 0 1 277.99 412.46" stroke="#4A8C5C" stroke-width="34" stroke-linecap="round" fill="none"/><path d="M 234.01 412.46 A 158.00 158.00 0 0 1 99.54 277.99" stroke="#B89A20" stroke-width="34" stroke-linecap="round" fill="none"/><path d="M 99.54 234.01 A 158.00 158.00 0 0 1 234.01 99.54" stroke="#4A6AAE" stroke-width="34" stroke-linecap="round" fill="none"/><circle cx="275.3" cy="99.2" r="17" fill="currentColor"/></svg><span>Clara</span></div>
 
     <div style="display:flex;flex-direction:column;gap:0;align-items:center;">
       <div class="phase-orb" id="sidebarOrb"></div>
