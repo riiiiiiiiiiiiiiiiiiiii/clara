@@ -220,12 +220,12 @@ body {
 
 .today-phase-name {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 36px;
-  font-weight: 300;
-  margin-bottom: 6px;
+  font-size: 25px;
+  font-weight: 400;
+  margin-bottom: 4px;
 }
 
-.today-day-count { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; opacity: 0.7; }
+.today-day-count { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 12px; opacity: 0.7; }
 .today-tagline { font-size: 14px; line-height: 1.7; max-width: 480px; opacity: 0.85; }
 
 /* ─── HORMONE BARS ─── */
@@ -430,6 +430,13 @@ body {
 
 .setup-input {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: block;
+  /* iOS gives date inputs an intrinsic width that ignores width:100% and lets
+     them spill past the card edge, so opt out of the native control sizing. */
+  -webkit-appearance: none;
+  appearance: none;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -504,7 +511,7 @@ body {
   .nav-icon { display: none; }
   .main { padding: 20px 16px 80px; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .today-banner { padding: 24px 24px; }
+  .today-banner { padding: 20px 22px; }
   .page-title { font-size: 30px; }
   .card { padding: 20px 20px; }
   .h-hero { grid-template-columns: 1fr; }
@@ -785,7 +792,6 @@ body {
   }
 
   /* Streak + stats row stacks */
-  #streakStatsRow { grid-template-columns: 1fr !important; }
 
   /* Tab bars scroll horizontally instead of wrapping */
   #page-calendar > div[style*="border-bottom"] {
@@ -840,7 +846,7 @@ body {
 
   /* Cards: less horizontal padding */
   .card { padding: 18px 16px; }
-  .today-banner { padding: 22px 18px; }
+  .today-banner { padding: 18px 16px; }
 
   /* Titles scale down */
   .page-title { font-size: 28px; }
@@ -899,7 +905,7 @@ body {
 
   <!-- ─── SIDEBAR ─── -->
   <aside class="sidebar">
-    <div class="brand" onclick="showPage('today')" style="cursor:pointer;" title="Go to Today"><svg class="brand-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M 277.99 99.54 A 158.00 158.00 0 0 1 412.46 234.01" stroke="#C0364A" stroke-width="34" stroke-linecap="round" fill="none"/><path d="M 412.46 277.99 A 158.00 158.00 0 0 1 277.99 412.46" stroke="#4A8C5C" stroke-width="34" stroke-linecap="round" fill="none"/><path d="M 234.01 412.46 A 158.00 158.00 0 0 1 99.54 277.99" stroke="#B89A20" stroke-width="34" stroke-linecap="round" fill="none"/><path d="M 99.54 234.01 A 158.00 158.00 0 0 1 234.01 99.54" stroke="#4A6AAE" stroke-width="34" stroke-linecap="round" fill="none"/><circle cx="275.3" cy="99.2" r="17" fill="currentColor"/></svg><span>Clara</span></div>
+    <div class="brand" onclick="showPage('today')" style="cursor:pointer;" title="Go to Today"><svg class="brand-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M 268.7 243.3 C 238.7 180.0 293.2 49.1 387.5 124.5 C 462.9 218.8 332.0 273.3 268.7 243.3 Z" fill="#D4738A"/><path d="M 268.7 268.7 C 332.0 238.7 462.9 293.2 387.5 387.5 C 293.2 462.9 238.7 332.0 268.7 268.7 Z" fill="#D4738A"/><path d="M 243.3 268.7 C 273.3 332.0 218.8 462.9 124.5 387.5 C 49.1 293.2 180.0 238.7 243.3 268.7 Z" fill="#D4738A"/><path d="M 243.3 243.3 C 180.0 273.3 49.1 218.8 124.5 124.5 C 218.8 49.1 273.3 180.0 243.3 243.3 Z" fill="#D4738A"/><circle cx="256" cy="256" r="90" fill="#F7EDE0"/><path d="M 291.7 301.7 A 58.0 58.0 0 1 1 291.7 210.3" fill="none" stroke="#4A0C20" stroke-width="26" stroke-linecap="round"/></svg><span>Clara</span></div>
 
     <div style="display:flex;flex-direction:column;gap:0;align-items:center;">
       <div class="phase-orb" id="sidebarOrb"></div>
@@ -970,10 +976,7 @@ body {
         </div>
 
         <!-- Streak & Stats row -->
-        <div class="grid-2" id="streakStatsRow" style="display:none;">
-          <div class="card" id="streakCard">
-            <div id="streakContent"></div>
-          </div>
+        <div id="streakStatsRow" style="display:none;">
           <div class="card" id="funStatsCard">
             <div id="funStatsContent"></div>
           </div>
@@ -1143,36 +1146,14 @@ body {
 
       <div id="floImport" style="margin-top:40px;border-top:1px solid var(--border);padding-top:32px;">
         <div class="page-header" style="margin-bottom:20px;">
-          <div class="page-title" style="font-size:32px;">Import from <em>Flo</em></div>
-          <div class="page-subtitle">Bring your Flo history into Clara and the calendar above fills in</div>
+          <div class="page-title" style="font-size:32px;">Import your <em>data</em></div>
+          <div class="page-subtitle">Bring your history over from another app and the calendar above fills in</div>
         </div>
       <div style="max-width:620px;">
 
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-title">How to export your Flo data</div>
-          <div class="card-subtitle">Flo lets you download your full history as a CSV file</div>
-          <div style="display:flex;flex-direction:column;gap:18px;margin-top:4px;">
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">1</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Open the <strong>Flo app</strong> on your phone &rarr; tap your <strong>Profile</strong> icon (bottom right)</div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">2</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Go to <strong>Settings &rarr; Privacy &amp; Security &rarr; Export data</strong></div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">3</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Tap <strong>"Export data"</strong> &mdash; Flo will prepare your data and email you a <code style="background:var(--border);padding:2px 6px;border-radius:4px;font-size:12px;">.json</code> file. This can take a few minutes to a few hours. Download the file from your email.</div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">4</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Upload it below &darr;</div>
-            </div>
-          </div>
-        </div>
 
         <div class="card" style="margin-bottom:20px;">
-          <div class="card-title">Upload your Flo CSV</div>
+          <div class="card-title">Upload your export file</div>
           <div class="card-subtitle">Your data never leaves your browser &mdash; everything is processed locally</div>
           <div id="floDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;"
                onclick="document.getElementById('floFileInput').click()"
@@ -1180,8 +1161,8 @@ body {
                ondragleave="this.style.borderColor='var(--border)'"
                ondrop="handleFloDrop(event)">
             <div style="font-size:32px;margin-bottom:10px;">&#128193;</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--accent);margin-bottom:6px;">Drop your CSV here</div>
-            <div style="font-size:12px;color:var(--muted);">or click to browse &middot; accepts .json (Flo official) or .csv</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--accent);margin-bottom:6px;">Drop your file here</div>
+            <div style="font-size:12px;color:var(--muted);">or click to browse &middot; accepts .json or .csv</div>
           </div>
           <input type="file" id="floFileInput" accept=".json,.csv" style="display:none;" onchange="handleFloFile(event)">
           <div id="floStatus" style="display:none;padding:16px;border-radius:10px;font-size:13px;line-height:1.7;"></div>
@@ -1196,7 +1177,7 @@ body {
         </div>
 
         <div class="card" style="background:var(--luteal-light);border-color:var(--luteal-mid);">
-          <div class="card-title" style="color:var(--luteal);">Can't export from Flo?</div>
+          <div class="card-title" style="color:var(--luteal);">Don't have an export?</div>
           <div style="font-size:13px;color:#1e2820;line-height:1.7;margin-bottom:16px;">
             No problem &mdash; go to <strong>My Cycle</strong> and enter your last period start date manually. Clara will calculate everything from there.
           </div>
@@ -1674,8 +1655,7 @@ function updateToday() {
   const banner = document.getElementById('todayBanner');
 
   // Streak, achievements & patterns: these run off logs, not cycle setup
-  document.getElementById('streakStatsRow').style.display = 'grid';
-  renderStreak();
+  document.getElementById('streakStatsRow').style.display = 'block';
   renderFunStats();
 
   if (!info) {
@@ -1790,7 +1770,6 @@ function saveLog() {
       showToast('⚠️ Entry may not have saved. Please try again');
     }
   }
-  renderStreak();
   renderFunStats();
 }
 
@@ -2880,7 +2859,7 @@ function processFloFile(file) {
   const isJson = name.endsWith('.json');
   const isCsv = name.endsWith('.csv');
   if (!isJson && !isCsv) {
-    showFloStatus('error', 'Please upload a .json or .csv file exported from Flo. Flo exports as JSON. Check your email from Flo\'s support team.');
+    showFloStatus('error', 'Please upload a .json or .csv file. Most apps email you a .json export; check your inbox for it.');
     return;
   }
   const reader = new FileReader();
@@ -2897,11 +2876,11 @@ function processFloFile(file) {
         pendingFloData = parsed;
         showFloPreview(parsed);
       } else {
-        showFloStatus('error', "Could not find period data in this file. Make sure you're using the file Flo emailed you. It should be a .json file. If you have a CSV, it may be from a third-party export tool, that's fine too.");
+        showFloStatus('error', "Could not find period data in this file. Make sure it's the export file your other app sent you \u2014 usually .json, though a .csv from an export tool works too.");
       }
     } catch(err) {
       console.error('Flo parse error:', err);
-      showFloStatus('error', 'Could not read this file: ' + err.message + '. Please try requesting a new export from Flo.');
+      showFloStatus('error', 'Could not read this file: ' + err.message + '. Try requesting a fresh export.');
     }
   };
   reader.readAsText(file);
@@ -3721,39 +3700,13 @@ function renderPredictions(info) {
   document.getElementById('predictionContent').innerHTML = `
     <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Coming up in ${daysToNextPhase} day${daysToNextPhase!==1?'s':''}</div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:${nextP.textColor};">${nextP.emoji} ${nextP.alterEgo || nextP.name} incoming</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:21px;color:${nextP.textColor};">${nextP.emoji} Your ${nextP.name.toLowerCase()} phase${nextP.alterEgo ? ` &middot; <span style="font-style:italic;opacity:0.8;">${nextP.alterEgo}</span>` : ''}</div>
     </div>
     <div style="font-size:13px;line-height:1.8;color:var(--text);">${nextMoodLine}${symptomLine ? '<br>' + symptomLine : ''}</div>
     ${allLogs.length < 5 ? '<div style="margin-top:8px;font-size:11px;color:var(--muted);font-style:italic;">Log more days to unlock personalised predictions based on your real patterns.</div>' : ''}
   `;
 }
 
-function renderStreak() {
-  const streak = getCurrentStreak(state);
-  const longest = getLongestStreak(state);
-  const totalLogs = Object.keys(state.logs || {}).length;
-  const earned = getEarnedAchievements();
-
-  const streakEmoji = streak >= 28 ? '🏆' : streak >= 14 ? '💫' : streak >= 7 ? '⚡' : streak >= 3 ? '🔥' : '✦';
-
-  document.getElementById('streakContent').innerHTML = `
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Logging streak</div>
-    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;color:var(--secondary);line-height:1;">${streak}</div>
-      <div style="font-size:14px;color:var(--muted);">day${streak!==1?'s':''} ${streakEmoji}</div>
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Best: ${longest} · Total: ${totalLogs} logs</div>
-    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Achievements (${earned.length}/${ACHIEVEMENTS.length})</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;">
-      ${ACHIEVEMENTS.map(a => {
-        const got = earned.find(e => e.id === a.id);
-        return `<div title="${a.name}: ${a.desc}" style="padding:5px 10px;border-radius:20px;font-size:11px;background:${got ? 'var(--menstrual-light)' : 'var(--bg)'};border:1px solid ${got ? 'var(--menstrual-mid)' : 'var(--border)'};color:${got ? 'var(--secondary)' : 'var(--muted)'};opacity:${got ? 1 : 0.45};cursor:default;">
-          ${a.icon} ${a.name}
-        </div>`;
-      }).join('')}
-    </div>
-  `;
-}
 
 function renderFunStats() {
   const logs = state.logs || {};

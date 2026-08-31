@@ -1,14 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8E2342"/>
-      <stop offset="1" stop-color="#3D0A1E"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="96" fill="url(#tile)"/>
-  <path d="M 290.73 77.34 A 182.00 182.00 0 0 1 434.66 221.27" stroke="#C0364A" stroke-width="44" stroke-linecap="round" fill="none"/>
-  <path d="M 434.66 290.73 A 182.00 182.00 0 0 1 290.73 434.66" stroke="#4A8C5C" stroke-width="44" stroke-linecap="round" fill="none"/>
-  <path d="M 221.27 434.66 A 182.00 182.00 0 0 1 77.34 290.73" stroke="#B89A20" stroke-width="44" stroke-linecap="round" fill="none"/>
-  <path d="M 77.34 221.27 A 182.00 182.00 0 0 1 221.27 77.34" stroke="#4A6AAE" stroke-width="44" stroke-linecap="round" fill="none"/>
-  <text x="256" y="264" text-anchor="middle" dominant-baseline="central" font-family="Cormorant Garamond, Cormorant, Georgia, serif" font-style="italic" font-weight="600" font-size="260" fill="#F7EDE0">C</text>
+  <rect width="512" height="512" rx="96" fill="#F7EDE0"/>
+  <path d="M 267.3 244.7 C 233.4 174.4 292.3 30.2 397.4 114.6 C 481.8 219.7 337.6 278.6 267.3 244.7 Z" fill="#D4738A"/>
+  <path d="M 267.3 267.3 C 337.6 233.4 481.8 292.3 397.4 397.4 C 292.3 481.8 233.4 337.6 267.3 267.3 Z" fill="#D4738A"/>
+  <path d="M 244.7 267.3 C 278.6 337.6 219.7 481.8 114.6 397.4 C 30.2 292.3 174.4 233.4 244.7 267.3 Z" fill="#D4738A"/>
+  <path d="M 244.7 244.7 C 174.4 278.6 30.2 219.7 114.6 114.6 C 219.7 30.2 278.6 174.4 244.7 244.7 Z" fill="#D4738A"/>
+  <circle cx="256" cy="256" r="98" fill="#F7EDE0"/>
+  <path d="M 294.2 304.9 A 62.0 62.0 0 1 1 294.2 207.1" fill="none" stroke="#4A0C20" stroke-width="34" stroke-linecap="round"/>
 </svg>
