@@ -171,7 +171,6 @@ body {
   color: var(--secondary);
 }
 .page-title em { font-style: italic; color: var(--secondary); opacity: 0.8; }
-#todayGreeting { font-weight: 700; }
 .page-subtitle { font-size: 13px; color: var(--muted); margin-top: 8px; letter-spacing: 0.3px; }
 
 /* ─── CARDS ─── */
@@ -315,10 +314,10 @@ body {
 .symptom-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .symptom-chip {
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 20px;
-  padding: 6px 14px;
+  border: 1px solid var(--menstrual-mid);
+  background: var(--menstrual-light);
+  border-radius: 10px;
+  padding: 8px 14px;
   font-size: 12px;
   color: var(--muted);
   cursor: pointer;
@@ -520,10 +519,10 @@ body {
 
 /* ─── HORMONE TABS ─── */
 .hormone-tab-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 8px 18px;
+  background: var(--menstrual-light);
+  border: 1px solid var(--menstrual-mid);
+  border-radius: 10px;
+  padding: 9px 18px;
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   color: var(--muted);
@@ -537,36 +536,34 @@ body {
 /* ─── SUB-PAGE SWITCH ─── */
 /* Segmented control for switching between views inside one page. */
 .subnav {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 24px;
-  background: var(--menstrual-light);
-  border: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 28px;
 }
+/* Same shape as the phase tabs: outlined rounded rectangle, soft fill. */
 .subnav-btn {
-  background: transparent;
-  border: none;
-  border-radius: 20px;
-  padding: 9px 22px;
+  background: var(--menstrual-light);
+  color: var(--accent);
+  border: 1px solid var(--menstrual-mid);
+  border-radius: 10px;
+  padding: 12px 24px;
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: var(--muted);
   cursor: pointer;
   transition: all 0.2s;
   letter-spacing: 0.3px;
   white-space: nowrap;
 }
-.subnav-btn:hover { color: var(--secondary); }
+.subnav-btn:hover { border-color: var(--secondary); color: var(--secondary); }
 .subnav-btn.active {
   background: var(--secondary);
+  border-color: var(--secondary);
   color: var(--main);
   font-weight: 500;
 }
 @media (max-width: 720px) {
-  .subnav { display: flex; width: 100%; }
-  .subnav-btn { flex: 1; padding: 9px 12px; }
+  .subnav-btn { flex: 1; padding: 12px 14px; text-align: center; }
 }
 
 /* ─── HORMONE CARD ─── */
@@ -634,10 +631,10 @@ body {
 
 /* ─── HISTORY ─── */
 .history-filter {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 5px 14px;
+  background: var(--menstrual-light);
+  border: 1px solid var(--menstrual-mid);
+  border-radius: 10px;
+  padding: 7px 14px;
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   color: var(--muted);
@@ -930,10 +927,6 @@ body {
 
     <!-- TODAY PAGE -->
     <div class="page active" id="page-today">
-      <div class="page-header">
-        <div class="page-title" id="todayGreeting">Good morning</div>
-      </div>
-
       <div class="subnav" id="todaySubnav">
         <button class="subnav-btn active" id="subtab-today" onclick="showTodayTab('today')">Today</button>
         <button class="subnav-btn" id="subtab-log" onclick="showTodayTab('log')">Log</button>
@@ -1115,11 +1108,6 @@ body {
 
     <!-- CALENDAR PAGE -->
     <div class="page" id="page-calendar">
-      <div class="page-header">
-        <div class="page-title">Your <em>Calendar</em></div>
-        <div class="page-subtitle">Logged days, cycle phases & predictions</div>
-      </div>
-
       <div class="grid-2">
         <div class="card">
           <div class="cal-header">
@@ -1201,7 +1189,7 @@ body {
 
     <!-- INSIGHTS PAGE -->
     <div class="page" id="page-insights">
-      <div class="subnav" id="insightsSubnav" style="margin-bottom:18px;">
+      <div class="subnav" id="insightsSubnav">
         <button class="subnav-btn active" id="subtab-phases" onclick="showInsightsTab('phases')">Phases</button>
         <button class="subnav-btn" id="subtab-hormones" onclick="showInsightsTab('hormones')">Hormones</button>
       </div>
@@ -1213,10 +1201,10 @@ body {
 
       <div id="insightsPhaseView">
         <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;">
-          <button class="btn-secondary" id="tab-menstrual" onclick="showInsight('menstrual')" style="border-color:var(--menstrual);color:var(--menstrual);">🩸 Menstrual</button>
-          <button class="btn-secondary" id="tab-follicular" onclick="showInsight('follicular')" style="border-color:var(--follicular);color:var(--follicular);">🌱 Follicular</button>
-          <button class="btn-secondary" id="tab-ovulatory" onclick="showInsight('ovulatory')" style="border-color:var(--ovulatory);color:var(--ovulatory);">✨ Ovulatory</button>
-          <button class="btn-secondary" id="tab-luteal" onclick="showInsight('luteal')" style="border-color:var(--luteal);color:var(--luteal);">🌙 Luteal</button>
+          <button class="btn-secondary phase-tab" id="tab-menstrual" onclick="showInsight('menstrual')" style="border-color:var(--menstrual);color:var(--menstrual);background:var(--menstrual-light);">🩸 Menstrual</button>
+          <button class="btn-secondary phase-tab" id="tab-follicular" onclick="showInsight('follicular')" style="border-color:var(--follicular);color:var(--follicular);background:var(--follicular-light);">🌱 Follicular</button>
+          <button class="btn-secondary phase-tab" id="tab-ovulatory" onclick="showInsight('ovulatory')" style="border-color:var(--ovulatory);color:var(--ovulatory);background:var(--ovulatory-light);">✨ Ovulatory</button>
+          <button class="btn-secondary phase-tab" id="tab-luteal" onclick="showInsight('luteal')" style="border-color:var(--luteal);color:var(--luteal);background:var(--luteal-light);">🌙 Luteal</button>
         </div>
 
         <div id="insightContent"></div>
@@ -1260,11 +1248,6 @@ body {
 
     <!-- SETUP PAGE -->
     <div class="page" id="page-setup">
-      <div class="page-header">
-        <div class="page-title">My <em>Cycle</em></div>
-        <div class="page-subtitle">Enter your details to personalise everything</div>
-      </div>
-
       <div class="setup-wrap">
         <div class="card" style="margin-bottom:20px;">
           <div class="card-title">Cycle Details</div>
@@ -1427,7 +1410,7 @@ const PHASES = {
       '💤 Sleep quality may be disrupted; extra rest is beneficial',
     ],
     insights: [
-      { badge: 'Why You Feel This Way', title: 'The Hormone Crash', body: 'Both oestrogen and progesterone have fallen sharply from their luteal highs. This double withdrawal is what physically triggers your period, and it\'s also behind any emotional fragility, fatigue, or that "I want to be left alone" feeling. It\'s not weakness. It\'s hormonal reality.<br><br><strong>Maisie Hill</strong> in <em>Period Power</em> describes this phase as a form of "hormonal PMT detox", the slate being wiped clean for the new cycle ahead. Your nervous system is recalibrating.' },
+      { badge: 'Why You Feel This Way', title: 'The Hormone Crash', body: 'Both oestrogen and progesterone have fallen sharply from their luteal highs. This double withdrawal is what physically triggers your period, and it\'s also behind any emotional fragility, fatigue, or that "I want to be left alone" feeling. It\'s hormonal reality.<br><br><strong>Maisie Hill</strong> in <em>Period Power</em> describes this phase as a form of "hormonal PMT detox", the slate being wiped clean for the new cycle ahead. Your nervous system is recalibrating.' },
       { badge: 'Body & Performance', title: 'Lower Physical Output is Normal', body: 'Research supports that pain tolerance and physical endurance are lower during menstruation, partly due to low oestrogen and increased prostaglandins (the chemicals causing cramps). This isn\'t a good time to push hard in workouts: gentle movement like walking, yoga, or swimming supports blood flow without straining the body.<br><br>Iron-rich foods (lentils, leafy greens, red meat) help replace what you lose during bleeding.' },
       { badge: 'Hidden Superpower', title: 'Your Analytical Brain is Sharp', body: 'While social energy may be low, the right hemisphere of the brain, responsible for pattern recognition, intuition, and seeing the bigger picture, is notably active during menstruation. Many women report that insights, decisions, and creative breakthroughs come to them during this phase.<br><br><em>Decode Your Cycle</em> notes this as a prime time for journalling, strategic thinking, and reviewing what\'s working in your life.' },
       { badge: 'Mood Support', title: 'What Actually Helps', body: '<strong>Warmth:</strong> Hot water bottles, warm baths, and heating pads reduce prostaglandin-driven cramping.<br><br><strong>Magnesium:</strong> Often depleted before your period, magnesium supports muscle relaxation and calmer mood.<br><br><strong>Reduced stimulants:</strong> Caffeine can worsen cramps and anxiety during this phase.<br><br><strong>Permission to rest:</strong> Culturally we\'re pushed to perform at the same level all month. This phase asks you to opt out of that pressure.' },
@@ -1657,8 +1640,6 @@ function updateSidebar() {
 function updateToday() {
   const now = new Date();
   const hour = now.getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  document.getElementById('todayGreeting').textContent = greeting;
 
   const info = getCurrentCycleInfo();
   const banner = document.getElementById('todayBanner');
@@ -2163,7 +2144,7 @@ function showInsight(phase) {
     if (!tab) return;
     const pd = PHASES[ph];
     const on = ph === phase;
-    tab.style.background = on ? pd.color : 'transparent';
+    tab.style.background = on ? pd.color : pd.light;
     tab.style.color = on ? '#fff' : pd.color;
     tab.style.fontWeight = on ? '500' : '300';
     tab.textContent = `${pd.emoji} ${pd.name}${info && info.phase === ph ? ' · now' : ''}`;
