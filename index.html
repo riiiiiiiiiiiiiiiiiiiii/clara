@@ -1,0 +1,3505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Clara">
+<meta name="theme-color" content="#A63D52">
+<link rel="manifest" href="data:application/json,{
+  &quot;name&quot;: &quot;Clara&quot;,
+  &quot;short_name&quot;: &quot;Clara&quot;,
+  &quot;description&quot;: &quot;Your hormone-aware cycle companion&quot;,
+  &quot;start_url&quot;: &quot;.&quot;,
+  &quot;display&quot;: &quot;standalone&quot;,
+  &quot;background_color&quot;: &quot;#f9f5ef&quot;,
+  &quot;theme_color&quot;: &quot;#A63D52&quot;,
+  &quot;icons&quot;: []
+}">
+<title>Clara: Know Your Cycle</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f9f5ef;
+  --surface: #ffffff;
+  --border: #e8ddd0;
+  --text: #1e2820;
+  --muted: #7a8e88;
+  --main: #E7D7C1;
+  --secondary: #B01840;
+  --accent: #A63D52;
+
+  --menstrual: #C0364A;
+  --menstrual-light: #fdeef1;
+  --menstrual-mid: #f0b0bc;
+
+  --follicular: #4A8C5C;
+  --follicular-light: #eef7f1;
+  --follicular-mid: #b0d8be;
+
+  --ovulatory: #B89A20;
+  --ovulatory-light: #fdf8e0;
+  --ovulatory-mid: #eedda0;
+
+  --luteal: #4A6AAE;
+  --luteal-light: #eef2fb;
+  --luteal-mid: #b8c8e8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+}
+
+/* ─── LAYOUT ─── */
+.app { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  padding-top: max(40px, env(safe-area-inset-top));
+  background: var(--accent);
+  color: var(--main);
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 2px;
+  color: var(--main);
+}
+
+.phase-orb {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-align: center;
+  line-height: 1.4;
+  transition: all 0.6s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-phase-label {
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
+
+.sidebar-day {
+  text-align: center;
+  font-size: 10px;
+  color: #c0a890;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.nav { display: flex; flex-direction: column; gap: 4px; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #c8a898;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+
+.nav-item:hover, .nav-item.active {
+  background: rgba(231,215,193,0.12);
+  color: var(--main);
+}
+
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 11px;
+  color: #8aaa98;
+  line-height: 1.6;
+  letter-spacing: 0.3px;
+}
+
+/* ─── MAIN ─── */
+.main { padding: 48px 52px max(80px, env(safe-area-inset-bottom)); overflow-y: auto; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── HEADERS ─── */
+.page-header { margin-bottom: 40px; }
+.page-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px;
+  font-weight: 300;
+  line-height: 1.1;
+  color: var(--secondary);
+}
+.page-title em { font-style: italic; color: var(--secondary); opacity: 0.8; }
+#todayGreeting { font-weight: 700; }
+.page-subtitle { font-size: 13px; color: var(--muted); margin-top: 8px; letter-spacing: 0.3px; }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 32px;
+}
+
+.card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--secondary);
+  margin-bottom: 6px;
+}
+
+.card-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 20px; letter-spacing: 0.3px; }
+
+/* ─── GRID ─── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+/* ─── TODAY CARD ─── */
+.today-banner {
+  border-radius: 20px;
+  padding: 36px 40px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.6s ease;
+}
+
+.today-banner::before {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  opacity: 0.15;
+  transition: background 0.6s ease;
+}
+
+.today-phase-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 300;
+  margin-bottom: 6px;
+}
+
+.today-day-count { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; opacity: 0.7; }
+.today-tagline { font-size: 14px; line-height: 1.7; max-width: 480px; opacity: 0.85; }
+
+/* ─── HORMONE BARS ─── */
+.hormone-grid { display: flex; flex-direction: column; gap: 16px; }
+
+.hormone-row { display: flex; flex-direction: column; gap: 6px; }
+
+.hormone-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.hormone-name { font-weight: 500; color: var(--secondary); }
+.hormone-level { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; }
+
+.hormone-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hormone-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.hormone-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+/* ─── LOG FORM ─── */
+.log-date-display {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.form-section { margin-bottom: 28px; }
+.form-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; display: block; }
+
+.slider-wrap { display: flex; align-items: center; gap: 14px; }
+.slider-wrap input[type=range] {
+  flex: 1;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+.slider-wrap input[type=range]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.slider-wrap input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+.slider-val { font-size: 13px; color: var(--secondary); min-width: 20px; text-align: right; font-weight: 500; }
+
+.mood-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+
+.mood-btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 10px;
+  padding: 10px 6px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.2s;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mood-btn span { font-size: 10px; color: var(--muted); }
+.mood-btn:hover, .mood-btn.selected { background: var(--secondary); border-color: var(--secondary); }
+.mood-btn.selected span { color: var(--main); }
+
+.symptom-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.symptom-chip {
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.symptom-chip:hover, .symptom-chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--main);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #f0ede6;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 32px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: var(--secondary); color: var(--secondary); }
+
+/* ─── CALENDAR ─── */
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.cal-nav { background: none; border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; color: var(--muted); transition: all 0.2s; }
+.cal-nav:hover { border-color: var(--secondary); color: var(--secondary); }
+.cal-month { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; color: var(--secondary); }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow { text-align: center; font-size: 10px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; padding: 6px 0; }
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.cal-day:hover { background: var(--border); }
+.cal-day.today { font-weight: 500; }
+.cal-day.today::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--secondary); position: absolute; bottom: 4px; }
+.cal-day.empty { cursor: default; }
+.cal-day.phase-menstrual { background: var(--menstrual-light); color: var(--menstrual); }
+.cal-day.phase-follicular { background: var(--follicular-light); color: var(--follicular); }
+.cal-day.phase-ovulatory { background: var(--ovulatory-light); color: var(--ovulatory); }
+.cal-day.phase-luteal { background: var(--luteal-light); color: var(--luteal); }
+.cal-day.period-day { background: #fce0e6; color: var(--menstrual); font-weight: 500; }
+.cal-day.period-start { background: var(--menstrual); color: white; font-weight: 600; }
+.cal-day.predicted { opacity: 0.4; border: 1px dashed; }
+
+/* ─── INSIGHTS ─── */
+.insight-card {
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+}
+
+.insight-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  font-weight: 500;
+  background: var(--border);
+  color: var(--secondary);
+}
+
+.insight-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+
+.insight-body { font-size: 13px; line-height: 1.8; color: #2a1020; }
+.insight-body strong { font-weight: 500; }
+
+/* ─── SETUP ─── */
+.setup-wrap { max-width: 500px; }
+.setup-field { margin-bottom: 24px; }
+.setup-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: block; }
+
+.setup-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--accent);
+  outline: none;
+  transition: border 0.2s;
+}
+.setup-input:focus { border-color: var(--secondary); }
+
+.setup-hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+.phase-legend { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+.phase-legend-item { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.phase-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── STATS ─── */
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.stat-row:last-child { border-bottom: none; }
+.stat-label { font-size: 13px; color: var(--muted); }
+.stat-val { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--secondary); }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  background: var(--accent);
+  color: var(--main);
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  pointer-events: none;
+  z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar {
+    height: auto;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    flex-direction: column;
+    padding: 16px 20px 0;
+    gap: 12px;
+  }
+  .phase-orb, .sidebar-phase-label, .sidebar-day, .sidebar-footer { display: none; }
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 4px;
+    padding-bottom: 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-item {
+    white-space: nowrap;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .nav-icon { display: none; }
+  .main { padding: 20px 16px 80px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .today-banner { padding: 24px 24px; }
+  .page-title { font-size: 30px; }
+  .card { padding: 20px 20px; }
+  .h-hero { grid-template-columns: 1fr; }
+  .h-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── HORMONE TABS ─── */
+.hormone-tab-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.hormone-tab-btn:hover { border-color: var(--secondary); color: var(--secondary); }
+.hormone-tab-btn.active { background: var(--secondary); border-color: var(--secondary); color: var(--main); }
+
+/* ─── HORMONE CARD ─── */
+.h-hero {
+  border-radius: 20px;
+  padding: 36px 40px;
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 32px;
+  align-items: center;
+}
+.h-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px;
+  font-weight: 300;
+  margin-bottom: 4px;
+}
+.h-aka { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.6; margin-bottom: 16px; }
+.h-one-liner { font-size: 14px; line-height: 1.7; max-width: 480px; }
+.h-cycle-bars { display: flex; flex-direction: column; gap: 8px; }
+.h-cycle-bar-row { display: flex; align-items: center; gap: 8px; font-size: 10px; }
+.h-cycle-bar-label { width: 68px; text-align: right; opacity: 0.7; flex-shrink: 0; }
+.h-cycle-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+.h-cycle-bar-fill { height: 100%; border-radius: 4px; background: rgba(255,255,255,0.7); }
+
+.h-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.h-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 24px;
+}
+.h-section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-weight: 400;
+  margin-bottom: 10px;
+  color: var(--secondary);
+}
+.h-section-body { font-size: 13px; line-height: 1.8; color: #1e2820; }
+.h-section-body strong { font-weight: 500; color: var(--blue); }
+.h-full { grid-column: 1 / -1; }
+
+/* hormone table */
+#hormoneTable tr { border-bottom: 1px solid var(--border); }
+#hormoneTable tr:last-child { border-bottom: none; }
+#hormoneTable td { padding: 10px 8px; vertical-align: middle; }
+#hormoneTable td:first-child { font-weight: 500; font-size: 13px; padding-left: 12px; }
+.level-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .h-hero { grid-template-columns: 1fr; }
+  .h-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ─── HISTORY ─── */
+.history-filter {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.history-filter:hover { border-color: var(--secondary); color: var(--secondary); }
+.history-filter.active { background: var(--secondary); border-color: var(--secondary); color: var(--main); }
+
+.history-entry {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 10px;
+  transition: box-shadow 0.2s;
+}
+.history-entry:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+.history-entry-date {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--secondary);
+  margin-bottom: 8px;
+}
+.history-entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.history-mood-badge {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+.history-energy-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.history-energy-track {
+  width: 60px;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.history-energy-fill {
+  height: 100%;
+  background: var(--secondary);
+  border-radius: 3px;
+}
+.history-symptoms {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.history-symptom-tag {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.history-notes {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  font-style: italic;
+  border-left: 2px solid var(--menstrual-mid);
+  padding-left: 12px;
+  margin-top: 6px;
+}
+.mood-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: default;
+  transition: transform 0.1s;
+}
+.mood-dot:hover { transform: scale(1.4); }
+.symptom-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.symptom-bar-label {
+  width: 130px;
+  font-size: 12px;
+  color: var(--text);
+  flex-shrink: 0;
+  text-align: right;
+}
+.symptom-bar-track {
+  flex: 1;
+  height: 7px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.symptom-bar-fill {
+  height: 100%;
+  background: var(--secondary);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.symptom-bar-count {
+  font-size: 11px;
+  color: var(--muted);
+  width: 28px;
+}
+
+
+/* ─── LOG TABS ─── */
+.log-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: all 0.18s;
+  letter-spacing: 0.3px;
+}
+.log-tab:hover { color: var(--secondary); }
+.log-tab.active { color: var(--secondary); border-bottom-color: var(--secondary); font-weight: 500; }
+
+
+/* ═══ MOBILE OPTIMISATIONS ═══ */
+@media (max-width: 700px) {
+
+  /* Prevent iOS zoom-on-focus: inputs must be >=16px */
+  input, select, textarea, .setup-input {
+    font-size: 16px !important;
+  }
+
+  /* Period add forms: stack vertically, full-width button */
+  #logPanel-entry [style*="grid-template-columns:1fr 1fr auto"],
+  [style*="grid-template-columns:1fr 1fr auto"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  [style*="grid-template-columns:1fr 1fr auto"] button {
+    width: 100%;
+    padding: 14px !important;
+  }
+
+  /* Alter ego: stack superpowers / handle-with-care */
+  #alterEgoContent [style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Streak + stats row stacks */
+  #streakStatsRow { grid-template-columns: 1fr !important; }
+
+  /* Tab bars scroll horizontally instead of wrapping */
+  #page-log > div[style*="border-bottom"],
+  #page-calendar > div[style*="border-bottom"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  #page-log > div[style*="border-bottom"]::-webkit-scrollbar,
+  #page-calendar > div[style*="border-bottom"]::-webkit-scrollbar { display: none; }
+  .log-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+
+  /* Filter chips: bigger touch targets */
+  .history-filter {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+
+  /* Symptom chips + mood buttons: min 44px touch target */
+  .symptom-chip {
+    padding: 10px 16px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+  .mood-btn { min-height: 64px; }
+
+  /* Symptom frequency bars: shrink label column */
+  .symptom-bar-label {
+    width: 88px;
+    font-size: 11px;
+  }
+
+  /* Mood dot strip: slightly bigger, scrollable if needed */
+  .mood-dot { width: 24px; height: 24px; font-size: 12px; }
+  #moodTrendStrip { gap: 4px; }
+
+  /* History entries: tighter padding, stack meta */
+  .history-entry { padding: 14px 16px; }
+  .history-entry-meta { gap: 6px; }
+  .history-energy-track { width: 48px; }
+
+  /* Calendar: bigger day cells for tapping */
+  .cal-day { font-size: 13px; }
+  .cal-grid { gap: 3px; }
+
+  /* Period history list: taller scroll area on mobile */
+  #setupPeriodHistoryList {
+    max-height: none !important;
+  }
+  #setupPeriodHistoryList > div {
+    max-height: 400px;
+  }
+
+  /* Cards: less horizontal padding */
+  .card { padding: 18px 16px; }
+  .today-banner { padding: 22px 18px; }
+
+  /* Titles scale down */
+  .page-title { font-size: 28px; }
+  .h-name { font-size: 32px; }
+
+  /* Setup wrap full width */
+  .setup-wrap { max-width: 100%; }
+
+  /* Sliders: bigger thumb for touch */
+  input[type="range"] { height: 28px; }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 22px; height: 22px;
+  }
+
+  /* Buttons full-width where sensible */
+  .btn-primary { min-height: 46px; }
+
+  /* Storage / backup buttons stack */
+  #storageInfo + div { flex-direction: column; }
+  #storageInfo + div button { width: 100%; }
+
+  /* Hormone table: allow horizontal scroll */
+  #hormoneTable { font-size: 11px; }
+  #hormoneTable td { padding: 8px 4px; }
+
+  /* Prevent horizontal overflow anywhere */
+  body, .app, .main { overflow-x: hidden; }
+  .card, .history-entry { max-width: 100%; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .page-title { font-size: 24px; }
+  .cal-day { font-size: 12px; }
+  .symptom-bar-label { width: 70px; }
+  .main { padding: 16px 12px 80px; }
+}
+
+/* Safe-area padding for notched iPhones */
+@supports (padding: max(0px)) {
+  .main {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: max(80px, env(safe-area-inset-bottom));
+  }
+  .sidebar {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+}
+
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="sidebar">
+    <div class="brand" onclick="showPage('today')" style="cursor:pointer;" title="Go to Today">Clara</div>
+
+    <div style="display:flex;flex-direction:column;gap:0;align-items:center;">
+      <div class="phase-orb" id="sidebarOrb"></div>
+      <div class="sidebar-phase-label" id="sidebarPhaseName">-</div>
+      <div class="sidebar-day" id="sidebarDayCount">Set up your cycle to begin</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-item active" onclick="showPage('today')"><span class="nav-icon">◎</span> Today</div>
+      <div class="nav-item" onclick="showPage('log')"><span class="nav-icon">✦</span> Log Day</div>
+      <div class="nav-item" onclick="showPage('calendar')"><span class="nav-icon">◈</span> Calendar</div>
+      <div class="nav-item" onclick="showPage('insights')"><span class="nav-icon">◉</span> Phase Insights</div>
+      <div class="nav-item" onclick="showPage('hormones')"><span class="nav-icon">⬡</span> Hormones Deep Dive</div>
+      <div class="nav-item" onclick="showPage('setup')"><span class="nav-icon">◇</span> My Cycle</div>
+      <div class="nav-item" onclick="showPage('flo')"><span class="nav-icon">⬆</span> Import from Flo</div>
+    </nav>
+
+    <div class="sidebar-footer">
+      Insights drawn from <em>Period Power</em>, <em>The Power of Hormones</em>, <em>Decode Your Cycle</em>, and <em>Not Just a Period</em>. For personal wellness use only, not medical advice.
+    </div>
+  </aside>
+
+  <!-- ─── MAIN ─── -->
+  <main class="main">
+
+    <!-- TODAY PAGE -->
+    <div class="page active" id="page-today">
+      <div class="page-header">
+        <div class="page-title" id="todayGreeting">Good morning</div>
+        <div class="page-subtitle" id="todayDate"></div>
+      </div>
+
+      <div class="today-banner" id="todayBanner">
+        <div class="today-phase-name" id="todayPhaseName">Set up your cycle</div>
+        <div class="today-day-count" id="todayDayCount">Go to "My Cycle" to get started →</div>
+        <div class="today-tagline" id="todayTagline">Once you enter your last period date, I'll calculate your current phase and surface personalised hormone and mood insights for you every day.</div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title">Hormones Right Now</div>
+          <div class="card-subtitle" id="hormoneSubtitle">Set up your cycle to see hormone data</div>
+          <div class="hormone-grid" id="hormoneGrid"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">What to Expect</div>
+          <div class="card-subtitle">Body, mood & energy today</div>
+          <div id="expectList" style="font-size:13px;line-height:1.9;color:#1e2820;"></div>
+        </div>
+      </div>
+
+      <!-- Alter Ego Card -->
+      <div class="card" id="alterEgoCard" style="display:none;position:relative;overflow:hidden;">
+        <div id="alterEgoContent"></div>
+      </div>
+
+      <!-- Prediction Card -->
+      <div class="card" id="predictionCard" style="display:none;">
+        <div id="predictionContent"></div>
+      </div>
+
+      <!-- Streak & Stats row -->
+      <div class="grid-2" id="streakStatsRow" style="display:none;">
+        <div class="card" id="streakCard">
+          <div id="streakContent"></div>
+        </div>
+        <div class="card" id="funStatsCard">
+          <div id="funStatsContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOG PAGE -->
+    <div class="page" id="page-log">
+      <div class="page-header">
+        <div class="page-title">Log <em>Today</em></div>
+        <div class="page-subtitle">Track your mood, energy & symptoms</div>
+      </div>
+
+      <!-- Tab bar -->
+      <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;">
+        <button class="log-tab active" id="logTab-entry" onclick="switchLogTab('entry')">Today's Entry</button>
+        <button class="log-tab" id="logTab-history" onclick="switchLogTab('history')">History</button>
+      </div>
+
+      <!-- Entry tab -->
+      <div id="logPanel-entry">
+      <div class="card" style="max-width:600px;">
+        <div class="log-date-display" id="logDateDisplay"></div>
+        <div class="card-subtitle" id="logPhaseDisplay"></div>
+
+        <div class="form-section">
+          <label class="form-label">How's your mood?</label>
+          <div class="mood-grid">
+            <button class="mood-btn" data-mood="radiant" onclick="selectMood(this)">✨<span>Radiant</span></button>
+            <button class="mood-btn" data-mood="good" onclick="selectMood(this)">🌸<span>Good</span></button>
+            <button class="mood-btn" data-mood="neutral" onclick="selectMood(this)">🌿<span>Neutral</span></button>
+            <button class="mood-btn" data-mood="low" onclick="selectMood(this)">🌧<span>Low</span></button>
+            <button class="mood-btn" data-mood="difficult" onclick="selectMood(this)">🌑<span>Difficult</span></button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Energy Level</label>
+          <div class="slider-wrap">
+            <span style="font-size:12px;color:var(--muted);">Low</span>
+            <input type="range" id="energySlider" min="1" max="10" value="5" oninput="document.getElementById('energyVal').textContent=this.value">
+            <span style="font-size:12px;color:var(--muted);">High</span>
+            <span class="slider-val" id="energyVal">5</span>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Symptoms (select all that apply)</label>
+          <div class="symptom-grid">
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Cramps</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Bloating</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Headache</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Breast tenderness</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Back pain</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Acne</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Food cravings</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Brain fog</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Heightened senses</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">High libido</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Fatigue</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Anxiety</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Irritability</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Motivation spike</button>
+            <button class="symptom-chip" onclick="toggleSymptom(this)">Vivid dreams</button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <label class="form-label">Notes (optional)</label>
+          <textarea id="logNotes" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;resize:vertical;min-height:80px;line-height:1.6;" placeholder="Anything else you'd like to remember..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <button class="btn-primary" onclick="saveLog()">Save Entry</button>
+          <button class="btn-secondary" onclick="togglePeriodLogger()">🩸 Log Period Start</button>
+        </div>
+
+        <!-- Period logger panel -->
+        <div id="periodLoggerPanel" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:20px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--secondary);margin-bottom:6px;">Log a Period</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Add any past or present period. Nothing gets overwritten.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div>
+              <label class="form-label">Started</label>
+              <input class="setup-input" type="date" id="periodStartInput" style="width:100%;">
+            </div>
+            <div>
+              <label class="form-label">Ended <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optional)</span></label>
+              <input class="setup-input" type="date" id="periodEndInput" style="width:100%;">
+            </div>
+            <button class="btn-primary" onclick="addPeriodEntry('periodStartInput','periodEndInput')" style="padding:12px 16px;">Add</button>
+          </div>
+          <div style="margin-top:14px;font-size:12px;color:var(--muted);">
+            View and edit your full period history in <span onclick="showPage('setup')" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">My Cycle</span>.
+          </div>
+        </div>
+      </div>
+    </div><!-- end logPanel-entry -->
+
+      <!-- History tab panel -->
+      <div id="logPanel-history" style="display:none;">
+
+        <!-- Filter bar -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;">
+          <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Filter</span>
+          <button class="history-filter active" data-filter="all" onclick="setHistoryFilter('all',this)">All</button>
+          <button class="history-filter" data-filter="radiant" onclick="setHistoryFilter('radiant',this)">😄 Radiant</button>
+          <button class="history-filter" data-filter="good" onclick="setHistoryFilter('good',this)">🙂 Good</button>
+          <button class="history-filter" data-filter="neutral" onclick="setHistoryFilter('neutral',this)">😐 Neutral</button>
+          <button class="history-filter" data-filter="low" onclick="setHistoryFilter('low',this)">😔 Low</button>
+          <button class="history-filter" data-filter="difficult" onclick="setHistoryFilter('difficult',this)">😞 Difficult</button>
+          <button class="history-filter" data-filter="has-notes" onclick="setHistoryFilter('has-notes',this)">📝 Has notes</button>
+        </div>
+
+        <!-- Mood trend strip -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">Mood over time</div>
+          <div class="card-subtitle" id="moodTrendSubtitle"></div>
+          <div id="moodTrendStrip" style="margin-top:14px;display:flex;gap:3px;flex-wrap:wrap;"></div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--muted);">
+            <span>😄 Radiant</span><span>🙂 Good</span><span>😐 Neutral</span><span>😔 Low</span><span>😞 Difficult</span>
+          </div>
+        </div>
+
+        <!-- Symptom summary -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">Most logged symptoms</div>
+          <div class="card-subtitle">Across all your entries</div>
+          <div id="symptomSummary" style="margin-top:14px;"></div>
+        </div>
+
+        <!-- Log entries list -->
+        <div id="historyEntries"></div>
+
+      </div><!-- end logPanel-history -->
+
+    </div><!-- end page-log -->
+
+    <!-- CALENDAR PAGE -->
+    <div class="page" id="page-calendar">
+      <div class="page-header">
+        <div class="page-title">Your <em>Calendar</em></div>
+        <div class="page-subtitle">Logged days, cycle phases & predictions</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="cal-header">
+            <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+            <div class="cal-month" id="calMonthLabel"></div>
+            <button class="cal-nav" onclick="changeMonth(1)">›</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="phase-legend" style="margin-top:20px;">
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>🩸 Menstrual <span style="font-size:10px;color:var(--muted);">· red-pink</span></span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:#fce0e6;border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular)"></div> <span>🌱 Follicular <span style="font-size:10px;color:var(--muted);">· warm peach</span></span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory)"></div> <span>✨ Ovulatory <span style="font-size:10px;color:var(--muted);">· golden</span></span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--luteal)"></div> <span>🌙 Luteal <span style="font-size:10px;color:var(--muted);">· soft blue</span></span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--border);border:1px dashed var(--muted)"></div> <span>Predicted</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Upcoming</div>
+          <div class="card-subtitle">Next events in your cycle</div>
+          <div id="upcomingList" style="margin-top:8px;"></div>
+
+          <div style="margin-top:28px;">
+            <div class="card-title">Cycle Stats</div>
+            <div class="card-subtitle">Based on your logs</div>
+            <div id="cycleStats"></div>
+          </div>
+        </div>
+      </div>
+
+
+
+    </div><!-- end page-calendar -->
+
+    <!-- INSIGHTS PAGE -->
+    <div class="page" id="page-insights">
+      <div class="page-header">
+        <div class="page-title">Phase <em>Insights</em></div>
+        <div class="page-subtitle">Deep dive into each phase: hormones, mood, body & performance</div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;">
+        <button class="btn-secondary" id="tab-menstrual" onclick="showInsight('menstrual')" style="border-color:var(--menstrual);color:var(--menstrual);">🩸 Menstrual</button>
+        <button class="btn-secondary" id="tab-follicular" onclick="showInsight('follicular')" style="border-color:var(--follicular);color:var(--follicular);">🌱 Follicular</button>
+        <button class="btn-secondary" id="tab-ovulatory" onclick="showInsight('ovulatory')" style="border-color:var(--ovulatory);color:var(--ovulatory);">✨ Ovulatory</button>
+        <button class="btn-secondary" id="tab-luteal" onclick="showInsight('luteal')" style="border-color:var(--luteal);color:var(--luteal);">🌙 Luteal</button>
+      </div>
+
+      <div id="insightContent"></div>
+    </div>
+
+    <!-- SETUP PAGE -->
+    <div class="page" id="page-setup">
+      <div class="page-header">
+        <div class="page-title">My <em>Cycle</em></div>
+        <div class="page-subtitle">Enter your details to personalise everything</div>
+      </div>
+
+      <div class="setup-wrap">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">Cycle Details</div>
+          <div class="card-subtitle">Used to calculate your current phase and predictions</div>
+
+          <div class="setup-field">
+            <label class="setup-label">First day of last period</label>
+            <input class="setup-input" type="date" id="lastPeriodInput">
+            <div class="setup-hint">This is Day 1 of your current cycle</div>
+          </div>
+
+          <div class="setup-field">
+            <label class="setup-label">Average cycle length (days)</label>
+            <div class="slider-wrap">
+              <span style="font-size:12px;color:var(--muted);">21</span>
+              <input type="range" id="cycleLengthSlider" min="21" max="40" value="28" oninput="document.getElementById('cycleLengthVal').textContent=this.value">
+              <span style="font-size:12px;color:var(--muted);">40</span>
+              <span class="slider-val" id="cycleLengthVal">28</span>
+            </div>
+            <div class="setup-hint">Most cycles are 21–35 days. 28 is the average.</div>
+          </div>
+
+          <div class="setup-field">
+            <label class="setup-label">Average period length (days)</label>
+            <div class="slider-wrap">
+              <span style="font-size:12px;color:var(--muted);">2</span>
+              <input type="range" id="periodLengthSlider" min="2" max="8" value="5" oninput="document.getElementById('periodLengthVal').textContent=this.value">
+              <span style="font-size:12px;color:var(--muted);">8</span>
+              <span class="slider-val" id="periodLengthVal">5</span>
+            </div>
+          </div>
+
+          <button class="btn-primary" onclick="saveSetup()">Save & Calculate</button>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;">
+            <div>
+              <div class="card-title" style="margin-bottom:2px;">Period History</div>
+              <div class="card-subtitle" style="margin-bottom:0;">Add all your past period start dates. The more you add, the more accurate your predictions</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border);">
+            <div>
+              <label class="form-label" style="margin-bottom:8px;">Period started</label>
+              <input class="setup-input" type="date" id="setupPeriodStart">
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:8px;">Period ended <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optional)</span></label>
+              <input class="setup-input" type="date" id="setupPeriodEnd">
+            </div>
+            <button class="btn-primary" onclick="addPeriodEntry('setupPeriodStart','setupPeriodEnd')" style="padding:12px 20px;white-space:nowrap;">+ Add</button>
+          </div>
+
+          <div id="setupPeriodHistoryList"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;background:var(--bg);border-color:var(--border);">
+          <div class="card-title">Storage & Data</div>
+          <div class="card-subtitle">All your data is saved locally in your browser</div>
+          <div id="storageInfo" style="font-size:13px;color:var(--text);line-height:1.8;"></div>
+          <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn-secondary" onclick="exportData()" style="font-size:12px;padding:8px 16px;">⬇ Export backup</button>
+            <button class="btn-secondary" onclick="document.getElementById('importBackupInput').click()" style="font-size:12px;padding:8px 16px;">⬆ Restore backup</button>
+            <input type="file" id="importBackupInput" accept=".json" style="display:none;" onchange="importBackup(event)">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">How Phases Are Calculated</div>
+          <div class="card-subtitle">Understanding your four seasons</div>
+          <div class="phase-legend" style="gap:16px;">
+            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--menstrual)"></div><strong style="font-size:13px;">Menstrual</strong> <span style="font-size:12px;color:var(--muted);">Days 1–5 (approx)</span></div>
+              <div style="font-size:12px;color:var(--muted);padding-left:22px;">Hormone levels are at their lowest. The uterine lining sheds. A time for rest and inward reflection.</div>
+            </div>
+            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--follicular)"></div><strong style="font-size:13px;">Follicular</strong> <span style="font-size:12px;color:var(--muted);">Days 6–13 (approx)</span></div>
+              <div style="font-size:12px;color:var(--muted);padding-left:22px;">Oestrogen rises as follicles develop. Energy builds, mood lifts, creativity flourishes.</div>
+            </div>
+            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--ovulatory)"></div><strong style="font-size:13px;">Ovulatory</strong> <span style="font-size:12px;color:var(--muted);">Days 14–16 (approx)</span></div>
+              <div style="font-size:12px;color:var(--muted);padding-left:22px;">LH surges triggering egg release. Oestrogen and testosterone peak. Confidence and sociability are highest.</div>
+            </div>
+            <div class="phase-legend-item" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <div style="display:flex;align-items:center;gap:10px;"><div class="phase-dot" style="background:var(--luteal)"></div><strong style="font-size:13px;">Luteal</strong> <span style="font-size:12px;color:var(--muted);">Days 17–28 (approx)</span></div>
+              <div style="font-size:12px;color:var(--muted);padding-left:22px;">Progesterone rises then falls. Energy slows, sensitivity increases. The body prepares for the next cycle.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- FLO IMPORT PAGE -->
+    <div class="page" id="page-flo">
+      <div class="page-header">
+        <div class="page-title">Import from <em>Flo</em></div>
+        <div class="page-subtitle">Bring your Flo data into Clara in a few steps</div>
+      </div>
+
+      <div style="max-width:620px;">
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">How to export your Flo data</div>
+          <div class="card-subtitle">Flo lets you download your full history as a CSV file</div>
+          <div style="display:flex;flex-direction:column;gap:18px;margin-top:4px;">
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">1</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Open the <strong>Flo app</strong> on your phone &rarr; tap your <strong>Profile</strong> icon (bottom right)</div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">2</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Go to <strong>Settings &rarr; Privacy &amp; Security &rarr; Export data</strong></div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">3</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Tap <strong>"Export data"</strong> &mdash; Flo will prepare your data and email you a <code style="background:var(--border);padding:2px 6px;border-radius:4px;font-size:12px;">.json</code> file. This can take a few minutes to a few hours. Download the file from your email.</div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">4</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Upload it below &darr;</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">Upload your Flo CSV</div>
+          <div class="card-subtitle">Your data never leaves your browser &mdash; everything is processed locally</div>
+          <div id="floDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;"
+               onclick="document.getElementById('floFileInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+               ondragleave="this.style.borderColor='var(--border)'"
+               ondrop="handleFloDrop(event)">
+            <div style="font-size:32px;margin-bottom:10px;">&#128193;</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--accent);margin-bottom:6px;">Drop your CSV here</div>
+            <div style="font-size:12px;color:var(--muted);">or click to browse &middot; accepts .json (Flo official) or .csv</div>
+          </div>
+          <input type="file" id="floFileInput" accept=".json,.csv" style="display:none;" onchange="handleFloFile(event)">
+          <div id="floStatus" style="display:none;padding:16px;border-radius:10px;font-size:13px;line-height:1.7;"></div>
+          <div id="floPreview" style="display:none;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--accent);margin-bottom:12px;">Found in your data</div>
+            <div id="floPreviewContent"></div>
+            <div style="margin-top:20px;display:flex;gap:12px;">
+              <button class="btn-primary" onclick="confirmFloImport()">Import this data</button>
+              <button class="btn-secondary" onclick="cancelFloImport()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background:var(--luteal-light);border-color:var(--luteal-mid);">
+          <div class="card-title" style="color:var(--luteal);">Can't export from Flo?</div>
+          <div style="font-size:13px;color:#1e2820;line-height:1.7;margin-bottom:16px;">
+            No problem &mdash; go to <strong>My Cycle</strong> and enter your last period start date manually. Clara will calculate everything from there.
+          </div>
+          <button class="btn-secondary" onclick="showPage('setup')">Go to My Cycle &rarr;</button>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- HORMONES DEEP DIVE PAGE -->
+    <div class="page" id="page-hormones">
+      <div class="page-header">
+        <div class="page-title">Hormones <em>Deep Dive</em></div>
+        <div class="page-subtitle">Understand the 6 key hormones that drive your entire cycle: what they are, what they do, and how they shift</div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;" id="hormoneTabBar">
+        <button class="hormone-tab-btn active" onclick="showHormoneCard('oestrogen')">Oestrogen</button>
+        <button class="hormone-tab-btn" onclick="showHormoneCard('progesterone')">Progesterone</button>
+        <button class="hormone-tab-btn" onclick="showHormoneCard('testosterone')">Testosterone</button>
+        <button class="hormone-tab-btn" onclick="showHormoneCard('fsh')">FSH</button>
+        <button class="hormone-tab-btn" onclick="showHormoneCard('lh')">LH</button>
+        <button class="hormone-tab-btn" onclick="showHormoneCard('cortisol')">Cortisol</button>
+      </div>
+
+      <div id="hormoneCardContent"></div>
+
+      <!-- Cycle Map -->
+      <div class="card" style="margin-top:28px;">
+        <div class="card-title">The Hormonal Orchestra: All Phases at Once</div>
+        <div class="card-subtitle">How all hormones move together across your cycle</div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:520px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border);">
+              <th style="text-align:left;padding:10px 12px;font-weight:500;color:var(--muted);letter-spacing:0.5px;">Hormone</th>
+              <th style="text-align:center;padding:10px 8px;color:var(--secondary);font-weight:600;">🩸 Menstrual</th>
+              <th style="text-align:center;padding:10px 8px;color:var(--follicular);font-weight:600;">🌱 Follicular</th>
+              <th style="text-align:center;padding:10px 8px;color:var(--accent);font-weight:600;">✨ Ovulatory</th>
+              <th style="text-align:center;padding:10px 8px;color:var(--luteal);font-weight:600;">🌙 Luteal</th>
+            </tr>
+          </thead>
+          <tbody id="hormoneTable"></tbody>
+        </table>
+        </div>
+      </div>
+
+      <!-- What Clara Focuses On vs Flo -->
+      <div class="card" style="margin-top:20px;background:linear-gradient(135deg,var(--menstrual-light),var(--luteal-light));border-color:var(--menstrual-mid);">
+        <div class="card-title">Why Clara goes deeper than other apps</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
+          <div>
+            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Most period apps (Flo etc.)</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#1e2820;">
+              <div>✓ Period &amp; ovulation date predictions</div>
+              <div>✓ 70–80 symptom tags to log</div>
+              <div>✓ Fertile window tracking</div>
+              <div>✓ Pregnancy &amp; TTC modes</div>
+              <div>✓ Partner sharing</div>
+              <div>✓ Water/sleep/weight logging</div>
+              <div style="opacity:0.4;">✗ Hormone science explained</div>
+              <div style="opacity:0.4;">✗ Why you feel what you feel</div>
+              <div style="opacity:0.4;">✗ Hormone-performance links</div>
+              <div style="opacity:0.4;">✗ Individual hormone deep dives</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Clara&apos;s focus</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#1e2820;">
+              <div>✓ Period &amp; cycle predictions</div>
+              <div>✓ Mood, energy &amp; symptom logging</div>
+              <div style="font-weight:500;color:var(--accent);">★ Each hormone explained in depth</div>
+              <div style="font-weight:500;color:var(--accent);">★ Real-time hormone levels per phase</div>
+              <div style="font-weight:500;color:var(--accent);">★ Why you feel exactly how you feel</div>
+              <div style="font-weight:500;color:var(--accent);">★ Performance, mood &amp; body impact</div>
+              <div style="font-weight:500;color:var(--accent);">★ Book-sourced science, not generic tips</div>
+              <div style="font-weight:500;color:var(--accent);">★ Hormone-by-hormone cycle map</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:20px;font-size:12px;color:var(--muted);font-style:italic;border-top:1px solid var(--border);padding-top:14px;">
+          What Clara doesn&apos;t yet have (compared to Flo): fertility/TTC mode, pregnancy tracking, BBT logging, partner mode, 80+ symptom tags, perimenopause tools, community/secret chats, birth control tracking. These could be added in future.
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───
+// ─── STATE ───
+let state = {
+  lastPeriodDate: null,
+  cycleLength: 28,
+  periodLength: 5,
+  logs: {},
+  periodStarts: [],   // legacy flat array, kept for compatibility
+  periods: [],        // [{start:'YYYY-MM-DD', end:'YYYY-MM-DD'|null}]
+  importedFrom: null,
+  importedCount: 0,
+};
+
+let calViewDate = new Date();
+let currentInsight = 'menstrual';
+
+// ─── PHASE DATA ───
+const PHASES = {
+  menstrual: {
+    name: 'Menstrual',
+    emoji: '🩸',
+    alterEgo: 'The Oracle',
+    alterEgoDesc: 'She doesn\'t have time for small talk. She sees through everything, needs nobody\'s approval, and is writing her manifesto in her head.',
+    alterEgoPerks: ['Bullshit detector is fully calibrated', 'Zero tolerance for things that don\'t spark joy', 'Excellent at saying no', 'Would absolutely thrive in a cosy cabin alone'],
+    alterEgoWarnings: ['May ghost social obligations without guilt', 'Strong opinions, loosely held (very loosely)', 'Do not suggest going out for dinner'],
+    color: 'var(--menstrual)',
+    light: 'var(--menstrual-light)',
+    mid: 'var(--menstrual-mid)',
+    textColor: 'var(--menstrual)',
+    tagline: 'Your body is releasing. This is your winter, a time for rest, reflection, and deep inner knowing.',
+    hormones: [
+      { name: 'Oestrogen', level: 8, label: 'Very Low', color: '#e8758a', desc: 'Oestrogen has dropped to its lowest point, signalling the uterine lining to shed. This withdrawal can cause fatigue, low mood, and that turned-inward feeling.' },
+      { name: 'Progesterone', level: 5, label: 'Very Low', color: '#a08cd0', desc: 'Progesterone has also collapsed. Its sudden fall is the key trigger for menstruation, and can bring emotional sensitivity, irritability, and disrupted sleep in the days just before.' },
+      { name: 'FSH', level: 30, label: 'Rising', color: '#e8a070', desc: 'Follicle-stimulating hormone begins climbing to recruit a new batch of follicles for the next cycle. The rebuild quietly begins even while you bleed.' },
+      { name: 'LH', level: 10, label: 'Low', color: '#c9963a', desc: 'Luteinising hormone stays low during menstruation, only surging at ovulation.' },
+      { name: 'Testosterone', level: 12, label: 'Low', color: '#7aaa6e', desc: 'Testosterone is low, contributing to lower libido and reduced drive: the body is conserving energy.' },
+    ],
+    expect: [
+      '🛌 Energy is naturally lower. Honour rest without guilt',
+      '🧠 Analytical thinking can be sharper than usual (intuition peaks)',
+      '💧 Cramps, bloating, and low back pain are common; heat helps',
+      '🍫 Cravings for iron-rich or comfort foods are your body communicating',
+      '🌊 Emotionally, you may feel more sensitive, introverted, or introspective',
+      '💤 Sleep quality may be disrupted; extra rest is beneficial',
+    ],
+    insights: [
+      { badge: 'Why You Feel This Way', title: 'The Hormone Crash', body: 'Both oestrogen and progesterone have fallen sharply from their luteal highs. This double withdrawal is what physically triggers your period, and it\'s also behind any emotional fragility, fatigue, or that "I want to be left alone" feeling. It\'s not weakness. It\'s hormonal reality.<br><br><strong>Maisie Hill</strong> in <em>Period Power</em> describes this phase as a form of "hormonal PMT detox", the slate being wiped clean for the new cycle ahead. Your nervous system is recalibrating.' },
+      { badge: 'Body & Performance', title: 'Lower Physical Output is Normal', body: 'Research supports that pain tolerance and physical endurance are lower during menstruation, partly due to low oestrogen and increased prostaglandins (the chemicals causing cramps). This isn\'t a good time to push hard in workouts: gentle movement like walking, yoga, or swimming supports blood flow without straining the body.<br><br>Iron-rich foods (lentils, leafy greens, red meat) help replace what you lose during bleeding.' },
+      { badge: 'Hidden Superpower', title: 'Your Analytical Brain is Sharp', body: 'While social energy may be low, the right hemisphere of the brain, responsible for pattern recognition, intuition, and seeing the bigger picture, is notably active during menstruation. Many women report that insights, decisions, and creative breakthroughs come to them during this phase.<br><br><em>Decode Your Cycle</em> notes this as a prime time for journalling, strategic thinking, and reviewing what\'s working in your life.' },
+      { badge: 'Mood Support', title: 'What Actually Helps', body: '<strong>Warmth:</strong> Hot water bottles, warm baths, and heating pads reduce prostaglandin-driven cramping.<br><br><strong>Magnesium:</strong> Often depleted before your period, magnesium supports muscle relaxation and calmer mood.<br><br><strong>Reduced stimulants:</strong> Caffeine can worsen cramps and anxiety during this phase.<br><br><strong>Permission to rest:</strong> Culturally we\'re pushed to perform at the same level all month. This phase asks you to opt out of that pressure.' },
+    ],
+  },
+  follicular: {
+    name: 'Follicular',
+    emoji: '🌱',
+    alterEgo: 'The Architect',
+    alterEgoDesc: 'She has a colour-coded plan, three new ideas before 9am, and genuinely believes she can learn Italian this week. She\'s not wrong.',
+    alterEgoPerks: ['Starts things and actually finishes them', 'Radiates competence in meetings', 'Excellent conversationalist', 'Sends the tricky email with zero anxiety'],
+    alterEgoWarnings: ['May overcommit to approximately everything', 'To-do list is now its own document', 'Extremely susceptible to new hobbies'],
+    color: 'var(--follicular)',
+    light: 'var(--follicular-light)',
+    mid: 'var(--follicular-mid)',
+    textColor: 'var(--follicular)',
+    tagline: 'Your spring is here. Oestrogen is rising, your mind is sharpening, and possibilities feel real again.',
+    hormones: [
+      { name: 'Oestrogen', level: 65, label: 'Rising', color: '#e8758a', desc: 'Oestrogen climbs steadily as follicles mature. This rising tide drives better mood, sharper cognition, improved skin, and a natural boost in motivation and confidence.' },
+      { name: 'Progesterone', level: 10, label: 'Low', color: '#a08cd0', desc: 'Progesterone stays low during the follicular phase: its absence means less bloating, better sleep, and a lighter emotional load.' },
+      { name: 'FSH', level: 60, label: 'Elevated', color: '#e8a070', desc: 'FSH is actively stimulating several follicles to grow, competing to be the one that releases an egg at ovulation. This follicular growth is what drives oestrogen production.' },
+      { name: 'LH', level: 20, label: 'Building', color: '#c9963a', desc: 'LH is building toward the surge that will trigger ovulation. Still low, but climbing.' },
+      { name: 'Testosterone', level: 35, label: 'Moderate', color: '#7aaa6e', desc: 'Testosterone begins to rise alongside oestrogen, adding to the overall sense of drive, focus, and libido.' },
+    ],
+    expect: [
+      '⚡ Energy is building. Use it for new projects and goals',
+      '🧠 Cognitive sharpness, verbal fluency, and memory are all improving',
+      '💬 Social energy returns; conversations feel easier and more enjoyable',
+      '💪 Physical performance improves; a good time to challenge yourself',
+      '🎨 Creativity and curiosity are heightened',
+      '✨ Skin often looks clearer and more radiant',
+    ],
+    insights: [
+      { badge: 'The Oestrogen Effect', title: 'Why Everything Feels Possible', body: 'Rising oestrogen acts on serotonin and dopamine receptors in the brain, the neurotransmitters behind mood, pleasure, and motivation. This is why the follicular phase often feels like a "natural high": you\'re genuinely neurochemically primed to feel optimistic and capable.<br><br>Oestrogen also supports neuroplasticity, your brain\'s ability to form new connections, making this an ideal phase for learning new skills or tackling complex problems.' },
+      { badge: 'Body & Performance', title: 'Your Athletic Peak Begins Here', body: 'Oestrogen has anti-inflammatory effects and supports muscle recovery, meaning physical performance climbs through this phase. Strength training, HIIT, and higher-intensity exercise yield better results now than in the luteal phase.<br><br><em>Not Just a Period</em> highlights that oestrogen also improves collagen synthesis, which supports joint strength and skin elasticity, another reason this is a natural upswing phase.' },
+      { badge: 'Work & Creativity', title: 'Best Phase to Start Things', body: 'The follicular phase is your "initiation phase", the optimal window for starting new projects, pitching ideas, making decisions, and putting yourself out there. Your verbal fluency is higher (oestrogen enhances language centres), which makes presentations, difficult conversations, and creative writing all feel more natural.<br><br>Use this window to plan, begin, and commit to the things you want to build.' },
+      { badge: 'Mood & Connection', title: 'Lean Into the Rising Energy', body: 'The follicular phase is a natural window for social risk-taking, reaching out to new people, saying yes to invitations, or having conversations you\'ve been putting off. Oestrogen supports oxytocin sensitivity, meaning connection and bonding feel more rewarding right now.' },
+    ],
+  },
+  ovulatory: {
+    name: 'Ovulatory',
+    emoji: '✨',
+    alterEgo: 'The Protagonist',
+    alterEgoDesc: 'She walks into rooms and people notice. Articulate, magnetic, charming, currently living in the best episode of her own show.',
+    alterEgoPerks: ['Everyone wants to collaborate with her', 'Negotiates like a CEO', 'Gives the speech, gets the standing ovation', 'Her texts are surprisingly funny'],
+    alterEgoWarnings: ['May say yes to things before checking her calendar', 'Slightly too honest in casual conversation', 'Will absolutely sign up for karaoke'],
+    color: 'var(--ovulatory)',
+    light: 'var(--ovulatory-light)',
+    mid: 'var(--ovulatory-mid)',
+    textColor: 'var(--ovulatory)',
+    tagline: 'You\'re at your peak. Oestrogen and testosterone are high: charisma, confidence, and connection are your superpowers.',
+    hormones: [
+      { name: 'Oestrogen', level: 92, label: 'Peak', color: '#e8758a', desc: 'Oestrogen hits its highest point just before ovulation. This surge triggers the LH spike that releases the egg. You may notice glowing skin, heightened attractiveness, and a strong pull toward connection.' },
+      { name: 'Progesterone', level: 15, label: 'Starting to Rise', color: '#a08cd0', desc: 'Progesterone begins a small pre-ovulatory rise, then surges post-ovulation as the corpus luteum forms. This early rise is calming without yet being sedating.' },
+      { name: 'FSH', level: 45, label: 'Dropping', color: '#e8a070', desc: 'FSH drops as one dominant follicle wins out and oestrogen feeds back to suppress it.' },
+      { name: 'LH', level: 95, label: '🔥 Peak Surge', color: '#c9963a', desc: 'The LH surge is the most dramatic hormonal event of the cycle, a spike of up to 10x baseline that triggers the egg\'s release within 24–36 hours. This is ovulation.' },
+      { name: 'Testosterone', level: 75, label: 'Elevated', color: '#7aaa6e', desc: 'Testosterone peaks alongside oestrogen during ovulation, driving libido, confidence, assertiveness, and a desire to be seen and social.' },
+    ],
+    expect: [
+      '💬 Communication feels effortless, a great time for presentations or negotiations',
+      '❤️ Libido is naturally higher',
+      '🏋️ Physical strength and endurance are at their peak',
+      '✨ You may feel more confident and attractive, because hormonally, you are',
+      '🤝 Empathy and attunement to others is heightened',
+      '🌡️ A slight rise in basal body temperature signals ovulation',
+    ],
+    insights: [
+      { badge: 'The Ovulation Window', title: 'Your Body\'s Hormonal Peak', body: 'Ovulation is the only event in the cycle where two hormones peak simultaneously, oestrogen and testosterone, alongside the dramatic LH surge. This triple hormonal high is why the ovulatory phase is often described as the most "switched on" phase of the cycle.<br><br>Studies show that vocal quality, facial symmetry perception, and even word choice shift subtly around ovulation: the body is biologically optimised for connection and communication during this short window.' },
+      { badge: 'Performance & Output', title: 'Harness the Peak', body: 'This is the window for your most demanding professional and creative work. High oestrogen enhances working memory, cognitive flexibility, and verbal fluency. Testosterone adds assertiveness and risk tolerance.<br><br><em>Period Power</em> suggests using this phase for high-stakes meetings, salary negotiations, public speaking, or launching anything requiring visibility and persuasion. Your natural charisma is at its highest.' },
+      { badge: 'The Body', title: 'Physical Performance Peaks', body: 'Research shows that pain tolerance, reaction time, and cardiovascular output are all elevated around ovulation. This is an excellent window for personal bests, competitive sport, or intense training.<br><br>One note of caution: oestrogen also relaxes ligaments and tendons, which slightly increases injury risk, particularly ACL injuries. Warm up well.' },
+      { badge: 'Emotional Landscape', title: 'Generous, Connected, Open', body: 'Emotionally, the ovulatory phase brings an expansive, outward-facing quality. You\'re more attuned to others\' emotions (oestrogen enhances the brain\'s mirror neuron activity), more willing to take social risks, and more likely to feel genuinely generous and collaborative.<br><br>The flip side: if there are relational tensions in your life, this heightened attunement can make you acutely aware of them. It\'s not a good phase to suppress difficult conversations.' },
+    ],
+  },
+  luteal: {
+    name: 'Luteal',
+    emoji: '🌙',
+    alterEgo: 'The Editor',
+    alterEgoDesc: 'She notices everything that\'s not working and has receipts. Perceptive, precise, and running out of patience for inefficiency. Her standards are high and honestly? Valid.',
+    alterEgoPerks: ['Spots problems before they happen', 'Detail work is immaculate', 'Excellent at editing, pruning, and prioritising', 'Has strong opinions and will share them'],
+    alterEgoWarnings: ['May send a strongly-worded email she\'ll re-read tomorrow', 'The mess in the kitchen feels personal', 'Thriving on comfort food and plausible deniability'],
+    color: 'var(--luteal)',
+    light: 'var(--luteal-light)',
+    mid: 'var(--luteal-mid)',
+    textColor: 'var(--luteal)',
+    tagline: 'Your autumn is here. Progesterone rises, energy turns inward. This phase asks for honesty, boundaries, and care.',
+    hormones: [
+      { name: 'Oestrogen', level: 40, label: 'Declining', color: '#e8758a', desc: 'Oestrogen drops from its ovulatory peak, then has a secondary smaller rise mid-luteal before falling again. This decline can bring a dip in mood, energy, and cognitive sharpness compared to the follicular high.' },
+      { name: 'Progesterone', level: 80, label: 'Dominant', color: '#a08cd0', desc: 'Progesterone is the star of the luteal phase. Produced by the corpus luteum, it rises to support a potential pregnancy. It has a calming, sedating quality: it\'s thermogenic (raises body temperature), can cause bloating, breast tenderness, and fatigue, but also promotes a sense of calm when levels are balanced.' },
+      { name: 'FSH', level: 15, label: 'Low', color: '#e8a070', desc: 'FSH is suppressed during the luteal phase by rising progesterone, preventing a new cycle from beginning prematurely.' },
+      { name: 'LH', level: 12, label: 'Low', color: '#c9963a', desc: 'LH returns to baseline after its ovulatory surge.' },
+      { name: 'Testosterone', level: 30, label: 'Declining', color: '#7aaa6e', desc: 'Testosterone falls through the luteal phase, contributing to lower libido and slightly less assertiveness compared to the ovulatory window.' },
+    ],
+    expect: [
+      '🌙 Energy slows and becomes more selective. Protect it wisely',
+      '📋 Detail-oriented, administrative, and finishing tasks feel more natural',
+      '🎯 A good time to edit, refine, and complete, rather than begin',
+      '🌡️ Basal body temperature is higher; you may feel warmer',
+      '💭 Emotional sensitivity increases, especially in the late luteal phase',
+      '🍽️ Appetite and cravings often increase (metabolic rate is slightly higher)',
+    ],
+    insights: [
+      { badge: 'The Progesterone Effect', title: 'Why You Feel Different', body: 'Progesterone is often called the "calming" hormone, but its effects are complex. It enhances GABA (the brain\'s main inhibitory neurotransmitter), which is why the early luteal phase can feel pleasantly calm and focused. But progesterone also increases core body temperature, slows digestion, and, when it falls sharply before menstruation, triggers the classic PMS window.<br><br><em>The Power of Hormones</em> notes that the late luteal phase is when unmet emotional needs, suppressed stress, and nutritional deficiencies all tend to surface.' },
+      { badge: 'PMS vs PMDD', title: 'Understanding Late Luteal Symptoms', body: 'PMS (premenstrual syndrome) affects up to 75% of people with cycles. Symptoms (bloating, mood shifts, irritability, food cravings) are caused by the drop in oestrogen and progesterone in days 24–28 (roughly).<br><br>PMDD (premenstrual dysphoric disorder) is a more severe form affecting around 5–8%, characterised by significantly impaired mood, anxiety, and functioning. If your luteal phase consistently feels debilitating, speak with a healthcare provider. It\'s a recognised condition with effective treatments.<br><br><em>Not Just a Period</em> emphasises that severe PMS is never "just in your head."' },
+      { badge: 'Work & Creativity', title: 'Completion Over Creation', body: 'The luteal phase is ideal for deep, focused, solitary work: editing, admin, analysis, research. The inward quality of progesterone makes it harder to generate and pitch new ideas, but easier to refine, finish, and perfect existing ones.<br><br>Alisa Vitti\'s cycle-syncing framework positions this phase as "autumn", the harvest season, where you reap what you sowed in the outward phases. Use this window to complete projects, have honest conversations, and reduce your commitments to preserve energy.' },
+      { badge: 'Mood Support', title: 'What Helps in the Luteal Phase', body: '<strong>Protein and complex carbs:</strong> Stabilise blood sugar to reduce mood swings and cravings.<br><br><strong>Magnesium and B6:</strong> Both support progesterone metabolism and reduce PMS severity, well evidenced in the literature.<br><br><strong>Reduce alcohol:</strong> The liver is already processing hormonal changes; alcohol amplifies luteal mood symptoms significantly.<br><br><strong>Boundaries:</strong> Lower social energy is real, not laziness. Saying no is self-care in this phase.<br><br><strong>Gentle movement:</strong> Walking, pilates, and yoga support lymphatic drainage and reduce bloating.' },
+    ],
+  },
+};
+
+// ─── UTILITIES ───
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function parseDate(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+function daysBetween(a, b) {
+  return Math.round((b - a) / 86400000);
+}
+
+// The most recent logged period start on or before a date (null if there is none)
+function getCycleStartFor(dateStr) {
+  const starts = (state.periods || []).map(p => p.start).sort();
+  let best = null;
+  for (const s of starts) {
+    if (s <= dateStr) best = s;
+    else break;
+  }
+  return best;
+}
+
+// The luteal phase runs close to a fixed 14 days whatever the cycle length,
+// so ovulation is counted back from the next period, not from mid-cycle.
+const LUTEAL_DAYS = 14;
+function getOvulationDay(cycleLength, periodLength) {
+  const pl = periodLength || 5;
+  return Math.max(pl + 2, cycleLength - LUTEAL_DAYS);
+}
+
+function getPhaseForDay(cycleDay, cycleLength, periodLength) {
+  const pl = periodLength || 5;
+  if (cycleDay <= pl) return 'menstrual';
+  const ovDay = getOvulationDay(cycleLength, pl);
+  if (cycleDay < ovDay) return 'follicular';
+  if (cycleDay <= ovDay + 1) return 'ovulatory';
+  return 'luteal';
+}
+
+function getCurrentCycleInfo() {
+  const todayStr = today();
+
+  // Prefer the most recent period actually logged; fall back to the setup date
+  let cycleStart = getCycleStartFor(todayStr);
+  if (state.lastPeriodDate && state.lastPeriodDate <= todayStr &&
+      (!cycleStart || state.lastPeriodDate > cycleStart)) {
+    cycleStart = state.lastPeriodDate;
+  }
+  if (!cycleStart) cycleStart = state.lastPeriodDate;
+  if (!cycleStart) return null;
+
+  const start = parseDate(cycleStart);
+  const now = parseDate(todayStr);
+  let cycleDay = daysBetween(start, now) + 1;
+  const cycleLength = state.cycleLength;
+  const periodLength = state.periodLength;
+
+  // Nothing logged for a while: project forward on the average cycle length
+  while (cycleDay > cycleLength) cycleDay -= cycleLength;
+  if (cycleDay < 1) cycleDay = 1;
+
+  const phase = getPhaseForDay(cycleDay, cycleLength, periodLength);
+  const daysUntilNext = cycleLength - cycleDay + 1;
+
+  // Next period date
+  const nextPeriod = new Date(now);
+  nextPeriod.setDate(nextPeriod.getDate() + daysUntilNext);
+
+  // Ovulation day
+  const ovDay = getOvulationDay(cycleLength, periodLength);
+  const daysToOv = ovDay - cycleDay;
+
+  return { cycleDay, cycleLength, periodLength, phase, daysUntilNext, nextPeriod, ovDay, daysToOv, cycleStart };
+}
+
+// ─── SIDEBAR ───
+function updateSidebar() {
+  const info = getCurrentCycleInfo();
+  const orb = document.getElementById('sidebarOrb');
+  const phaseName = document.getElementById('sidebarPhaseName');
+  const dayCount = document.getElementById('sidebarDayCount');
+
+  if (!info) {
+    orb.style.background = '#3a2030';
+    orb.textContent = '?';
+    phaseName.textContent = '-';
+    dayCount.textContent = 'Set up your cycle';
+    return;
+  }
+
+  const p = PHASES[info.phase];
+  orb.style.background = `conic-gradient(#E8C84A ${(info.cycleDay/info.cycleLength)*360}deg, rgba(255,255,255,0.08) 0deg)`;
+  orb.innerHTML = `<div style="width:86px;height:86px;border-radius:50%;background:#1C3A35;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">${p.emoji}</div>`;
+  phaseName.textContent = p.name;
+  dayCount.textContent = `Cycle Day ${info.cycleDay} of ${info.cycleLength}`;
+}
+
+// ─── TODAY PAGE ───
+function updateToday() {
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('todayGreeting').textContent = greeting;
+  document.getElementById('todayDate').textContent = formatDate(now);
+
+  const info = getCurrentCycleInfo();
+  const banner = document.getElementById('todayBanner');
+
+  // Streak, achievements & patterns: these run off logs, not cycle setup
+  document.getElementById('streakStatsRow').style.display = 'grid';
+  renderStreak();
+  renderFunStats();
+
+  if (!info) {
+    banner.style.background = '#f0ede8';
+    return;
+  }
+
+  const p = PHASES[info.phase];
+  banner.style.background = p.light;
+  banner.style.borderLeft = `4px solid ${p.color}`;
+  document.getElementById('todayPhaseName').style.color = p.color;
+  document.getElementById('todayPhaseName').textContent = `${p.emoji} ${p.name} Phase`;
+  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay} · ${info.daysUntilNext} days until next period`;
+  document.getElementById('todayTagline').textContent = p.tagline;
+
+  // Hormones
+  const grid = document.getElementById('hormoneGrid');
+  document.getElementById('hormoneSubtitle').textContent = `${p.name} phase: what\'s happening inside`;
+  grid.innerHTML = p.hormones.map(h => `
+    <div class="hormone-row">
+      <div class="hormone-label">
+        <span class="hormone-name">${h.name}</span>
+        <span class="hormone-level">${h.label}</span>
+      </div>
+      <div class="hormone-track">
+        <div class="hormone-fill" style="width:${h.level}%;background:${h.color};"></div>
+      </div>
+      <div class="hormone-desc">${h.desc}</div>
+    </div>
+  `).join('');
+
+  // Expect
+  document.getElementById('expectList').innerHTML = p.expect.map(e => `<div>${e}</div>`).join('');
+
+  // Phase alter ego + what's coming next
+  renderAlterEgo(info.phase);
+  renderPredictions(info);
+}
+
+// ─── LOG PAGE ───
+let selectedMood = null;
+let selectedSymptoms = [];
+
+function updateLogPage() {
+  document.getElementById('logDateDisplay').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+  const info = getCurrentCycleInfo();
+  document.getElementById('logPhaseDisplay').textContent = info ? `${PHASES[info.phase].emoji} ${PHASES[info.phase].name} Phase · Day ${info.cycleDay}` : 'Set up your cycle to see phase';
+
+  // Rebuild the form from today's stored log, so nothing carries over
+  // from the last day logged in this session
+  const existing = state.logs[today()] || {};
+
+  selectedMood = existing.mood || null;
+  document.querySelectorAll('.mood-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mood === selectedMood);
+  });
+
+  selectedSymptoms = existing.symptoms ? [...existing.symptoms] : [];
+  document.querySelectorAll('.symptom-chip').forEach(c => {
+    c.classList.toggle('selected', selectedSymptoms.includes(c.textContent));
+  });
+
+  const energy = existing.energy || 5;
+  document.getElementById('energySlider').value = energy;
+  document.getElementById('energyVal').textContent = energy;
+
+  document.getElementById('logNotes').value = existing.notes || '';
+}
+
+function selectMood(btn) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedMood = btn.dataset.mood;
+}
+
+function toggleSymptom(btn) {
+  btn.classList.toggle('selected');
+  const s = btn.textContent;
+  if (btn.classList.contains('selected')) {
+    if (!selectedSymptoms.includes(s)) selectedSymptoms.push(s);
+  } else {
+    selectedSymptoms = selectedSymptoms.filter(x => x !== s);
+  }
+}
+
+function saveLog() {
+  const todayStr = today();
+  // Merge with any existing entry for today, never lose fields
+  const existing = state.logs[todayStr] || {};
+  state.logs[todayStr] = {
+    ...existing,
+    mood: selectedMood || existing.mood || null,
+    energy: parseInt(document.getElementById('energySlider').value) || existing.energy || 5,
+    symptoms: [...selectedSymptoms],
+    notes: document.getElementById('logNotes').value !== '' 
+      ? document.getElementById('logNotes').value 
+      : (existing.notes || ''),
+    phase: getCurrentCycleInfo()?.phase || existing.phase || null,
+    savedAt: new Date().toISOString(),
+  };
+  save();
+  // Verify save worked
+  const check = localStorage.getItem('clara_state');
+  if (check) {
+    const parsed = JSON.parse(check);
+    if (parsed.logs && parsed.logs[todayStr]) {
+      showToast('Entry saved ✓');
+    } else {
+      showToast('⚠️ Entry may not have saved. Please try again');
+    }
+  }
+  renderStreak();
+  renderFunStats();
+}
+
+function togglePeriodLogger() {
+  const panel = document.getElementById('periodLoggerPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    // Default to today
+    document.getElementById('periodStartInput').value = today();
+  }
+}
+
+function addPeriodEntry(startInputId, endInputId) {
+  const startVal = document.getElementById(startInputId)?.value;
+  if (!startVal) { showToast('Please pick a start date first'); return; }
+  const endVal = document.getElementById(endInputId)?.value || null;
+
+  if (endVal && endVal < startVal) {
+    showToast('End date must be after start date'); return;
+  }
+
+  // Check if period with this start already exists, update end if so
+  const existing = state.periods.find(p => p.start === startVal);
+  if (existing) {
+    existing.end = endVal;
+  } else {
+    state.periods.push({ start: startVal, end: endVal });
+    state.periods.sort((a,b) => a.start.localeCompare(b.start));
+  }
+
+  // Keep periodStarts in sync
+  state.periodStarts = state.periods.map(p => p.start);
+  state.lastPeriodDate = state.periodStarts[state.periodStarts.length - 1];
+
+  // Recalculate avg cycle length from gaps
+  if (state.periodStarts.length >= 2) {
+    const gaps = [];
+    for (let i = 1; i < state.periodStarts.length; i++) {
+      const gap = (parseDate(state.periodStarts[i]) - parseDate(state.periodStarts[i-1])) / 86400000;
+      if (gap >= 18 && gap <= 60) gaps.push(gap);
+    }
+    if (gaps.length > 0) state.cycleLength = Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+  }
+
+  // Recalculate avg period length from durations
+  const durations = state.periods
+    .filter(p => p.end)
+    .map(p => (parseDate(p.end) - parseDate(p.start)) / 86400000 + 1)
+    .filter(d => d >= 1 && d <= 10);
+  if (durations.length > 0) state.periodLength = Math.round(durations.reduce((a,b)=>a+b,0)/durations.length);
+
+  // Clear inputs
+  document.getElementById(startInputId).value = '';
+  if (endInputId) document.getElementById(endInputId).value = '';
+
+  save();
+  updateAll();
+  renderAllPeriodLists();
+  showToast('🩸 Period saved');
+}
+
+// Legacy compat for Log Day toggle button
+function addPeriodStartFrom(startId, endId) {
+  addPeriodEntry(startId, endId || startId.replace('Start','End').replace('Input','EndInput'));
+}
+function addPeriodStart() {
+  const val = document.getElementById('periodStartInput')?.value;
+  if (!val) { showToast('Please pick a date first'); return; }
+  addPeriodEntry('periodStartInput', null);
+}
+
+function removePeriodStart(dateStr) {
+  state.periods = state.periods.filter(p => p.start !== dateStr);
+  state.periodStarts = state.periods.map(p => p.start);
+  state.lastPeriodDate = state.periodStarts.length > 0
+    ? state.periodStarts[state.periodStarts.length - 1] : null;
+  save();
+  updateAll();
+  renderAllPeriodLists();
+  showToast('Removed');
+}
+
+function renderAllPeriodLists() {
+  renderPeriodListInto('setupPeriodHistoryList');
+}
+
+function renderPeriodListInto(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const periods = [...(state.periodStarts || [])].sort().reverse();
+
+  if (periods.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">No periods logged yet. Add your first one above.</div>';
+    return;
+  }
+
+  // Group by year
+  const byYear = {};
+  periods.forEach(d => {
+    const y = d.slice(0,4);
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(d);
+  });
+
+  const yearsHTML = Object.entries(byYear).sort((a,b) => b[0]-a[0]).map(([year, dates]) => `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <span>${year}</span>
+        <span style="background:var(--border);border-radius:10px;padding:1px 8px;">${dates.length}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        ${dates.map(d => {
+          const period = state.periods.find(p => p.start === d) || { start: d, end: null };
+          const startObj = new Date(d + 'T00:00:00');
+          const startLabel = startObj.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'long' });
+          const isMostRecent = d === state.lastPeriodDate;
+          let durationStr = '';
+          if (period.end) {
+            const days = Math.round((new Date(period.end+'T00:00:00') - startObj) / 86400000) + 1;
+            const endLabel = new Date(period.end+'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+            durationStr = `<span style="font-size:11px;color:var(--muted);">→ ${endLabel} · ${days} day${days!==1?'s':''}</span>`;
+          } else {
+            durationStr = `<span style="font-size:11px;color:var(--muted);font-style:italic;">no end date</span>`;
+          }
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:8px;background:${isMostRecent ? 'var(--menstrual-light)' : 'var(--surface)'};border:1px solid ${isMostRecent ? 'var(--menstrual-mid)' : 'var(--border)'};">
+            <div style="display:flex;align-items:flex-start;gap:8px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:${isMostRecent ? 'var(--secondary)' : 'var(--muted)'};flex-shrink:0;margin-top:4px;"></div>
+              <div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:13px;color:var(--text);">${startLabel}</span>
+                  ${isMostRecent ? '<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--secondary);background:var(--menstrual-light);border:1px solid var(--menstrual-mid);padding:1px 6px;border-radius:10px;">current</span>' : ''}
+                </div>
+                <div style="margin-top:2px;">${durationStr}</div>
+              </div>
+            </div>
+            <button onclick="removePeriodStart('${d}')" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:0 4px;line-height:1;opacity:0.5;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5" title="Remove">×</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  el.innerHTML = `
+    <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">${periods.length} period${periods.length !== 1 ? 's' : ''} logged · ${Object.keys(byYear).length} year${Object.keys(byYear).length !== 1 ? 's' : ''}</div>
+    <div style="max-height:320px;overflow-y:auto;padding-right:4px;">
+      ${yearsHTML}
+    </div>
+  `;
+}
+
+// ─── CALENDAR ───
+function initPeriodInputs() {
+  const t = today();
+  ['setupPeriodStart','periodStartInput'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = t;
+  });
+}
+
+function renderCalendar() {
+  const y = calViewDate.getFullYear();
+  const m = calViewDate.getMonth();
+  document.getElementById('calMonthLabel').textContent = new Date(y, m, 1).toLocaleDateString('en-GB', { month:'long', year:'numeric' });
+
+  const grid = document.getElementById('calGrid');
+  const dows = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  const firstDay = new Date(y, m, 1);
+  let startDow = firstDay.getDay(); // 0=Sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // Mon=0
+  for (let i = 0; i < startDow; i++) html += `<div class="cal-day empty"></div>`;
+
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const todayStr = today();
+  const info = getCurrentCycleInfo();
+
+  // Which logged cycle a date belongs to: shared with getCurrentCycleInfo()
+  // so the calendar and the Today page can never disagree
+  const getCycleStartForDate = getCycleStartFor;
+
+  const isFutureDate = (dateStr) => dateStr > todayStr;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+
+    const cl = state.cycleLength || 28;
+    const pl = state.periodLength || 5;
+    const isPredicted = isFutureDate(dateStr);
+
+    // ── STRATEGY 1: date falls within a LOGGED cycle (we have a period start on/before it) ──
+    const cycleStart = getCycleStartForDate(dateStr);
+    if (cycleStart) {
+      const cd = daysBetween(parseDate(cycleStart), parseDate(dateStr)) + 1;
+      if (cd >= 1 && cd <= cl) {
+        const phase = getPhaseForDay(cd, cl, pl);
+        cls += ` phase-${phase}`;
+        if (isPredicted) cls += ' predicted';
+      } else if (cd > cl) {
+        // Falls into a predicted future cycle beyond last logged start
+        // Use lastPeriodDate-based calculation for future
+        const futureCd = ((cd - 1) % cl) + 1;
+        const phase = getPhaseForDay(futureCd, cl, pl);
+        cls += ` phase-${phase}`;
+        if (isPredicted) cls += ' predicted';
+      }
+    } else if (state.lastPeriodDate) {
+      // ── STRATEGY 2: no logged period start on/before, use lastPeriodDate to project forward ──
+      const start = parseDate(state.lastPeriodDate);
+      const thisDate = parseDate(dateStr);
+      let cd = daysBetween(start, thisDate) + 1;
+      if (cd >= 1) {
+        while (cd > cl) cd -= cl;
+        const phase = getPhaseForDay(cd, cl, pl);
+        cls += ` phase-${phase}`;
+        if (isPredicted) cls += ' predicted';
+      }
+    }
+
+    // ── Mark actual period start days ──
+    if (state.periodStarts && state.periodStarts.includes(dateStr)) {
+      // Remove any phase-menstrual we added, replace with vivid period-start
+      cls = cls.replace(' phase-menstrual', '');
+      cls += ' period-start';
+    }
+
+    // ── Mark days within a logged bleeding range ──
+    if (state.periods) {
+      for (const p of state.periods) {
+        if (p.end && dateStr > p.start && dateStr <= p.end) {
+          cls += ' period-day';
+          break;
+        }
+      }
+    }
+
+    const hasLog = state.logs[dateStr];
+    html += `<div class="${cls}" title="${dateStr}">${d}${hasLog ? '<div style="position:absolute;bottom:2px;right:2px;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.4;"></div>' : ''}</div>`;
+  }
+
+  grid.innerHTML = html;
+
+  // Upcoming
+  renderUpcoming();
+  renderStats();
+}
+
+function renderUpcoming() {
+  const info = getCurrentCycleInfo();
+  if (!info) { document.getElementById('upcomingList').innerHTML = '<div style="font-size:13px;color:var(--muted);">Set up your cycle to see upcoming events.</div>'; return; }
+
+  const events = [];
+  const now = parseDate(today());
+
+  // Next period
+  events.push({ days: info.daysUntilNext, label: '🩸 Next period starts', color: 'var(--menstrual)' });
+  // Ovulation
+  if (info.daysToOv > 0) events.push({ days: info.daysToOv, label: '✨ Ovulation window', color: 'var(--ovulatory)' });
+  else if (info.daysToOv <= 0) {
+    const nextOvDays = info.cycleLength - info.cycleDay + info.ovDay;
+    events.push({ days: nextOvDays, label: '✨ Next ovulation', color: 'var(--ovulatory)' });
+  }
+
+  // Phase transitions
+  const cl = info.cycleLength; const pl = info.periodLength;
+  const follStart = pl + 1; const ovStart = getOvulationDay(cl, pl); const lutStart = ovStart + 2;
+  const transitions = [
+    { day: follStart, label: '🌱 Follicular phase begins', color: 'var(--follicular)' },
+    { day: ovStart, label: '✨ Ovulatory phase begins', color: 'var(--ovulatory)' },
+    { day: lutStart, label: '🌙 Luteal phase begins', color: 'var(--luteal)' },
+  ];
+  transitions.forEach(t => {
+    const daysAway = t.day - info.cycleDay;
+    if (daysAway > 0) events.push({ days: daysAway, label: t.label, color: t.color });
+  });
+
+  events.sort((a,b) => a.days - b.days);
+
+  document.getElementById('upcomingList').innerHTML = events.slice(0,5).map(e => {
+    const dateObj = new Date(); dateObj.setDate(dateObj.getDate() + e.days);
+    const dateLabel = e.days === 0 ? 'Today' : e.days === 1 ? 'Tomorrow' : dateObj.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+    return `<div class="stat-row"><span class="stat-label">${e.label}</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;color:${e.color};">${dateLabel}</span></div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const info = getCurrentCycleInfo();
+  const logCount = Object.keys(state.logs).length;
+  document.getElementById('cycleStats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Cycle length</span><span class="stat-val">${state.cycleLength || '-'} days</span></div>
+    <div class="stat-row"><span class="stat-label">Period length</span><span class="stat-val">${state.periodLength || '-'} days</span></div>
+    <div class="stat-row"><span class="stat-label">Current cycle day</span><span class="stat-val">${info ? info.cycleDay : '-'}</span></div>
+    <div class="stat-row"><span class="stat-label">Days logged</span><span class="stat-val">${logCount}</span></div>
+  `;
+}
+
+function changeMonth(dir) {
+  calViewDate.setMonth(calViewDate.getMonth() + dir);
+  renderCalendar();
+}
+
+// ─── INSIGHTS ───
+function showInsight(phase) {
+  currentInsight = phase;
+  const p = PHASES[phase];
+  const info = getCurrentCycleInfo();
+
+  // Highlight the selected tab, and mark the phase the user is actually in
+  ['menstrual','follicular','ovulatory','luteal'].forEach(ph => {
+    const tab = document.getElementById('tab-' + ph);
+    if (!tab) return;
+    const pd = PHASES[ph];
+    const on = ph === phase;
+    tab.style.background = on ? pd.color : 'transparent';
+    tab.style.color = on ? '#fff' : pd.color;
+    tab.style.fontWeight = on ? '500' : '300';
+    tab.textContent = `${pd.emoji} ${pd.name}${info && info.phase === ph ? ' · now' : ''}`;
+  });
+
+  const content = document.getElementById('insightContent');
+  content.innerHTML = `
+    <div style="padding:28px 32px;border-radius:20px;background:${p.light};border:1px solid ${p.mid};margin-bottom:24px;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:${p.color};margin-bottom:8px;">${p.emoji} ${p.name} Phase</div>
+      <div style="font-size:14px;color:#1e2820;line-height:1.7;font-style:italic;">${p.tagline}</div>
+    </div>
+    ${p.insights.map(ins => `
+      <div class="insight-card" style="background:${p.light};border:1px solid ${p.mid};">
+        <div class="insight-badge" style="background:${p.mid};color:${p.color};">${ins.badge}</div>
+        <div class="insight-title">${ins.title}</div>
+        <div class="insight-body">${ins.body}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+// ─── SETUP ───
+function saveSetup() {
+  const val = document.getElementById('lastPeriodInput').value;
+  if (!val) { showToast('Please select a date first'); return; }
+  state.lastPeriodDate = val;
+  state.cycleLength = parseInt(document.getElementById('cycleLengthSlider').value) || 28;
+  state.periodLength = parseInt(document.getElementById('periodLengthSlider').value) || 5;
+
+  // Ensure lastPeriodDate is in periods[] so calendar shows it
+  if (!state.periods.find(p => p.start === val)) {
+    state.periods.push({ start: val, end: null });
+    state.periods.sort((a,b) => a.start.localeCompare(b.start));
+  }
+  state.periodStarts = state.periods.map(p => p.start);
+
+  save();
+  updateAll();
+  showToast('Cycle saved ✓. Your insights are ready!');
+  renderStorageInfo();
+  showPage('today');
+}
+
+function loadSetupValues() {
+  if (state.lastPeriodDate) document.getElementById('lastPeriodInput').value = state.lastPeriodDate;
+  if (state.cycleLength) {
+    document.getElementById('cycleLengthSlider').value = state.cycleLength;
+    document.getElementById('cycleLengthVal').textContent = state.cycleLength;
+  }
+  if (state.periodLength) {
+    document.getElementById('periodLengthSlider').value = state.periodLength;
+    document.getElementById('periodLengthVal').textContent = state.periodLength;
+  }
+}
+
+// ─── NAV ───
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const navItems = document.querySelectorAll('.nav-item');
+  const pages = ['today','log','calendar','insights','hormones','setup','flo'];
+  navItems[pages.indexOf(name)]?.classList.add('active');
+
+  if (name === 'calendar') renderCalendar();
+  if (name === 'log') updateLogPage();
+  if (name === 'insights') showInsight(getCurrentCycleInfo()?.phase || currentInsight);
+  if (name === 'hormones') showHormoneCard(dominantHormoneKey());
+  if (name === 'setup') { loadSetupValues(); renderStorageInfo(); renderAllPeriodLists(); }
+}
+
+// ─── PERSISTENCE ───
+function save() {
+  try {
+    const serialized = JSON.stringify(state);
+    localStorage.setItem('clara_state', serialized);
+    // Verify write succeeded
+    const readback = localStorage.getItem('clara_state');
+    if (!readback) throw new Error('Write did not persist');
+    // Spot-check: key count should match
+    const written = JSON.parse(readback);
+    const logCountOk = Object.keys(written.logs || {}).length === Object.keys(state.logs || {}).length;
+    if (!logCountOk) throw new Error('Log count mismatch after write');
+  } catch (e) {
+    console.error('Clara save error:', e);
+    // Retry once after clearing non-essential data
+    try {
+      localStorage.removeItem('clara_install_dismissed');
+      localStorage.setItem('clara_state', JSON.stringify(state));
+      console.log('Clara: save succeeded on retry');
+    } catch (e2) {
+      console.error('Clara: save failed permanently:', e2);
+      showToast('⚠️ Could not save data. Storage may be full or blocked in your browser settings');
+    }
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('clara_state');
+    if (!raw) { console.log('Clara: no saved state found, starting fresh'); return; }
+
+    let loaded;
+    try { loaded = JSON.parse(raw); }
+    catch(e) { console.error('Clara: saved state is corrupt JSON, ignoring:', e); return; }
+
+    if (typeof loaded !== 'object' || loaded === null) {
+      console.error('Clara: saved state is not an object, ignoring');
+      return;
+    }
+
+    // Deep-merge: only overwrite state keys that exist in saved data
+    // Never let a missing key clobber a default
+    if (loaded.lastPeriodDate !== undefined) state.lastPeriodDate = loaded.lastPeriodDate;
+    if (loaded.cycleLength) state.cycleLength = loaded.cycleLength;
+    if (loaded.periodLength) state.periodLength = loaded.periodLength;
+    if (loaded.importedFrom) state.importedFrom = loaded.importedFrom;
+    if (loaded.importedCount) state.importedCount = loaded.importedCount;
+
+    // Logs: merge so we never lose entries
+    if (loaded.logs && typeof loaded.logs === 'object') {
+      state.logs = { ...loaded.logs };
+    }
+
+    // Periods array (new structure)
+    if (Array.isArray(loaded.periods) && loaded.periods.length > 0) {
+      state.periods = loaded.periods;
+    }
+
+    // Migrate legacy periodStarts flat array → periods[]
+    if (Array.isArray(loaded.periodStarts) && loaded.periodStarts.length > 0 && state.periods.length === 0) {
+      state.periods = loaded.periodStarts.map(s => ({ start: s, end: null }));
+      console.log('Clara: migrated', loaded.periodStarts.length, 'legacy period starts to new format');
+    }
+
+    // Always keep periodStarts in sync from periods[]
+    state.periodStarts = state.periods.map(p => p.start).sort();
+
+    // If lastPeriodDate not set but we have periods, use most recent
+    if (!state.lastPeriodDate && state.periodStarts.length > 0) {
+      state.lastPeriodDate = state.periodStarts[state.periodStarts.length - 1];
+    }
+
+    const logCount = Object.keys(state.logs).length;
+    const periodCount = state.periods.length;
+    console.log(`Clara: loaded state: ${logCount} logs, ${periodCount} periods, lastPeriod: ${state.lastPeriodDate}`);
+  } catch (e) {
+    console.error('Clara: unexpected error loading state:', e);
+  }
+}
+
+function getStorageInfo() {
+  try {
+    const raw = localStorage.getItem('clara_state') || '{}';
+    const sizeKB = (new Blob([raw]).size / 1024).toFixed(1);
+    const data = JSON.parse(raw);
+    const logCount = Object.keys(data.logs || {}).length;
+    const periodCount = (data.periodStarts || []).length;
+    return { sizeKB, logCount, periodCount, ok: true };
+  } catch(e) {
+    return { ok: false };
+  }
+}
+
+function updateAll() {
+  updateSidebar();
+  updateToday();
+}
+
+function renderStorageInfo() {
+  const el = document.getElementById('storageInfo');
+  if (!el) return;
+  const info = getStorageInfo();
+  if (!info.ok) {
+    el.innerHTML = '<span style="color:var(--secondary);">⚠️ Could not read storage info.</span>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div class="stat-row"><span class="stat-label">Days logged</span><span class="stat-val">${info.logCount}</span></div>
+      <div class="stat-row"><span class="stat-label">Periods recorded</span><span class="stat-val">${info.periodCount}</span></div>
+      <div class="stat-row" style="border:none;"><span class="stat-label">Storage used</span><span class="stat-val">${info.sizeKB} KB</span></div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);">Data is stored in your browser's localStorage. It persists between sessions but will be lost if you clear your browser data. Use the export button below to back it up.</div>
+  `;
+}
+
+function exportData() {
+  try {
+    const dataStr = JSON.stringify(state, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'clara-backup-' + today() + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✓ Backup downloaded');
+  } catch(e) {
+    showToast('Could not export: ' + e.message);
+  }
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const loaded = JSON.parse(e.target.result);
+      // Validate it looks like Clara data
+      if (typeof loaded !== 'object' || Array.isArray(loaded)) throw new Error('Invalid backup format');
+      Object.assign(state, loaded);
+      state.logs = state.logs || {};
+      state.periodStarts = state.periodStarts || [];
+      state.cycleLength = state.cycleLength || 28;
+      state.periodLength = state.periodLength || 5;
+      save();
+      updateAll();
+      renderStorageInfo();
+      showToast('✓ Backup restored');
+    } catch(e) {
+      showToast('Could not restore: ' + e.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ─── TOAST ───
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+
+// ─── FLO IMPORT ───
+let pendingFloData = null;
+
+function handleFloDrop(event) {
+  event.preventDefault();
+  document.getElementById('floDropZone').style.borderColor = 'var(--border)';
+  const file = event.dataTransfer.files[0];
+  if (file) processFloFile(file);
+}
+
+function handleFloFile(event) {
+  const file = event.target.files[0];
+  if (file) processFloFile(file);
+}
+
+function processFloFile(file) {
+  const name = file.name.toLowerCase();
+  const isJson = name.endsWith('.json');
+  const isCsv = name.endsWith('.csv');
+  if (!isJson && !isCsv) {
+    showFloStatus('error', 'Please upload a .json or .csv file exported from Flo. Flo exports as JSON. Check your email from Flo\'s support team.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      let parsed = null;
+      if (isJson) {
+        parsed = parseFloJSON(text);
+      } else {
+        parsed = parseFloCSV(text);
+      }
+      if (parsed && parsed.allPeriodStarts.length > 0) {
+        pendingFloData = parsed;
+        showFloPreview(parsed);
+      } else {
+        showFloStatus('error', "Could not find period data in this file. Make sure you're using the file Flo emailed you. It should be a .json file. If you have a CSV, it may be from a third-party export tool, that's fine too.");
+      }
+    } catch(err) {
+      console.error('Flo parse error:', err);
+      showFloStatus('error', 'Could not read this file: ' + err.message + '. Please try requesting a new export from Flo.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── PARSE FLO'S OFFICIAL JSON EXPORT ──
+// Flo sends a JSON with a structure like:
+// { "cycles": [ { "period_start": "2019-01-15", "period_end": "2019-01-20", "cycle_length": 28, ... }, ... ] }
+// or { "menstruation": [ { "date": "2019-01-15", ... } ] }
+// or flat array of cycle objects
+// We handle all known variants
+function parseFloJSON(text) {
+  const raw = JSON.parse(text);
+
+  let periodStarts = [];
+  let cycleLengths = [];
+
+  // Helper: extract YYYY-MM-DD from various date string formats
+  function normalizeDate(str) {
+    if (!str) return null;
+    // Already ISO
+    const iso = str.match(/(\d{4}-\d{2}-\d{2})/);
+    if (iso) return iso[1];
+    // DD/MM/YYYY
+    const dmy = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+    // MM/DD/YYYY
+    const mdy = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (mdy) {
+      const d = new Date(str);
+      if (!isNaN(d)) return d.toISOString().slice(0,10);
+    }
+    // Timestamp
+    const ts = parseInt(str);
+    if (!isNaN(ts) && ts > 1000000000) {
+      const d = new Date(ts * 1000);
+      return d.toISOString().slice(0,10);
+    }
+    return null;
+  }
+
+  function addPeriodStart(dateStr) {
+    const d = normalizeDate(dateStr);
+    if (d && d >= '2000-01-01' && d <= '2030-12-31') {
+      if (!periodStarts.includes(d)) periodStarts.push(d);
+    }
+  }
+
+  // ── VARIANT 1: { cycles: [ { period_start, period_end, cycle_length } ] }
+  if (raw.cycles && Array.isArray(raw.cycles)) {
+    raw.cycles.forEach(c => {
+      const start = c.period_start || c.periodStart || c.start_date || c.startDate || c.date;
+      if (start) addPeriodStart(start);
+      if (c.cycle_length && c.cycle_length >= 18 && c.cycle_length <= 60) cycleLengths.push(c.cycle_length);
+      if (c.cycleLength && c.cycleLength >= 18 && c.cycleLength <= 60) cycleLengths.push(c.cycleLength);
+    });
+  }
+
+  // ── VARIANT 2: { menstruation: [ { date, ... } ] }, each entry is a period day
+  if (raw.menstruation && Array.isArray(raw.menstruation)) {
+    const mensDates = raw.menstruation
+      .map(m => normalizeDate(m.date || m.start_date || m.day))
+      .filter(Boolean)
+      .sort();
+    // Group consecutive days into period starts
+    let lastDate = null;
+    mensDates.forEach(d => {
+      if (!lastDate) {
+        addPeriodStart(d);
+      } else {
+        const gap = (new Date(d) - new Date(lastDate)) / 86400000;
+        if (gap > 3) addPeriodStart(d); // new period if gap > 3 days
+      }
+      lastDate = d;
+    });
+  }
+
+  // ── VARIANT 3: { periods: [ { start, end } ] }
+  if (raw.periods && Array.isArray(raw.periods)) {
+    raw.periods.forEach(p => {
+      const start = p.start || p.start_date || p.period_start || p.date;
+      if (start) addPeriodStart(start);
+      if (p.cycle_length && p.cycle_length >= 18 && p.cycle_length <= 60) cycleLengths.push(p.cycle_length);
+    });
+  }
+
+  // ── VARIANT 4: Top-level array [ { period_start, ... } ]
+  if (Array.isArray(raw)) {
+    raw.forEach(item => {
+      const start = item.period_start || item.periodStart || item.start_date || item.date;
+      if (start) addPeriodStart(start);
+      if (item.cycle_length && item.cycle_length >= 18 && item.cycle_length <= 60) cycleLengths.push(item.cycle_length);
+    });
+  }
+
+  // ── VARIANT 5: { data: { cycles: [...] } } or { user: { cycles: [...] } }
+  const nested = raw.data || raw.user || raw.profile || raw.health_data;
+  if (nested) {
+    const nestedCycles = nested.cycles || nested.periods || nested.menstruation;
+    if (Array.isArray(nestedCycles)) {
+      nestedCycles.forEach(c => {
+        const start = c.period_start || c.start || c.date || c.start_date;
+        if (start) addPeriodStart(start);
+        if (c.cycle_length && c.cycle_length >= 18 && c.cycle_length <= 60) cycleLengths.push(c.cycle_length);
+      });
+    }
+  }
+
+  // ── VARIANT 6: Deep scan: walk any object recursively looking for period date keys
+  if (periodStarts.length === 0) {
+    function deepScan(obj, depth) {
+      if (depth > 8 || !obj || typeof obj !== 'object') return;
+      if (Array.isArray(obj)) {
+        obj.forEach(item => deepScan(item, depth + 1));
+        return;
+      }
+      const keys = Object.keys(obj);
+      const periodKeyPatterns = /period_start|periodstart|start_date|startdate|period_date|menstruation_date|cycle_start/i;
+      keys.forEach(k => {
+        if (periodKeyPatterns.test(k) && typeof obj[k] === 'string') {
+          addPeriodStart(obj[k]);
+        }
+        deepScan(obj[k], depth + 1);
+      });
+    }
+    deepScan(raw, 0);
+  }
+
+  periodStarts.sort();
+
+  // Calculate cycle lengths from period start gaps if not provided
+  if (cycleLengths.length === 0 && periodStarts.length >= 2) {
+    for (let i = 1; i < periodStarts.length; i++) {
+      const gap = (new Date(periodStarts[i]) - new Date(periodStarts[i-1])) / 86400000;
+      if (gap >= 18 && gap <= 60) cycleLengths.push(gap);
+    }
+  }
+
+  const avgCycleLength = cycleLengths.length > 0
+    ? Math.round(cycleLengths.reduce((a,b)=>a+b,0) / cycleLengths.length)
+    : 28;
+
+  // Calculate average period length if we have end dates
+  let periodLength = 5;
+  if (raw.cycles) {
+    const lengths = raw.cycles
+      .filter(c => c.period_start && c.period_end)
+      .map(c => {
+        const s = new Date(normalizeDate(c.period_start));
+        const e = new Date(normalizeDate(c.period_end));
+        return Math.round((e - s) / 86400000) + 1;
+      })
+      .filter(l => l >= 1 && l <= 10);
+    if (lengths.length > 0) periodLength = Math.round(lengths.reduce((a,b)=>a+b,0) / lengths.length);
+  }
+
+  return {
+    mostRecentPeriod: periodStarts[periodStarts.length - 1],
+    allPeriodStarts: periodStarts,
+    totalPeriods: periodStarts.length,
+    avgCycleLength: Math.min(Math.max(avgCycleLength, 18), 60),
+    periodLength,
+    source: 'json',
+    yearRange: periodStarts.length > 0 ? `${periodStarts[0].slice(0,4)} – ${periodStarts[periodStarts.length-1].slice(0,4)}` : '',
+  };
+}
+
+// ── PARSE CSV VARIANTS ──
+// Handles: Flo CSV (if they ever offer it), Apple Health export CSVs,
+// generic period tracker CSVs, and manual entry CSVs
+function parseFloCSV(text) {
+  // Normalise line endings, handle BOM
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('File appears to be empty or has only one line');
+
+  function splitCSVLine(line) {
+    const result = [];
+    let inQuotes = false;
+    let current = '';
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQuotes = !inQuotes; continue; }
+      if (ch === ',' && !inQuotes) { result.push(current.trim()); current = ''; continue; }
+      current += ch;
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  const headers = splitCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g,''));
+
+  // Find key column indices
+  const dateIdx = (() => {
+    const candidates = ['date','startdate','period_start','periodstart','start','day','cyclestart','cycle_start','start_date'];
+    for (const c of candidates) { const i = headers.indexOf(c); if (i !== -1) return i; }
+    // partial match
+    for (let i = 0; i < headers.length; i++) {
+      if (headers[i].includes('date') || headers[i].includes('start')) return i;
+    }
+    return 0;
+  })();
+
+  const periodIdx = (() => {
+    const candidates = ['period','menstruation','bleeding','flow','menstrual','isperiod','period_flow','periodflow'];
+    for (const c of candidates) { const i = headers.indexOf(c); if (i !== -1) return i; }
+    for (let i = 0; i < headers.length; i++) {
+      if (headers[i].includes('period') || headers[i].includes('bleed') || headers[i].includes('flow') || headers[i].includes('menst')) return i;
+    }
+    return -1;
+  })();
+
+  const cycleLenIdx = (() => {
+    for (let i = 0; i < headers.length; i++) {
+      if (headers[i].includes('cyclelength') || headers[i].includes('cycle_length')) return i;
+    }
+    return -1;
+  })();
+
+  function parseAnyDate(str) {
+    if (!str) return null;
+    str = str.trim().replace(/['"]/g, '');
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) return new Date(str.slice(0,10) + 'T00:00:00');
+    // DD/MM/YYYY or DD.MM.YYYY
+    const dmy = str.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})/);
+    if (dmy) return new Date(parseInt(dmy[3]), parseInt(dmy[2])-1, parseInt(dmy[1]));
+    // MM/DD/YYYY
+    const mdy = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (mdy) return new Date(parseInt(mdy[3]), parseInt(mdy[1])-1, parseInt(mdy[2]));
+    // YYYYMMDD
+    if (/^\d{8}$/.test(str)) return new Date(str.slice(0,4), parseInt(str.slice(4,6))-1, parseInt(str.slice(6,8)));
+    // Unix timestamp
+    if (/^\d{10,13}$/.test(str)) {
+      const ts = parseInt(str);
+      return new Date(ts > 9999999999 ? ts : ts * 1000);
+    }
+    // Natural language fallback
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function toISO(d) {
+    if (!d || isNaN(d.getTime())) return null;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // STRATEGY A: One row per period start (cycle summary CSV)
+  // Detect by checking if rows are sparse (one per ~28 days)
+  const allDates = [];
+  const cycleLengthsFromFile = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitCSVLine(lines[i]);
+    if (!cols[dateIdx]) continue;
+    const d = parseAnyDate(cols[dateIdx]);
+    if (!d || d.getFullYear() < 2000 || d.getFullYear() > 2030) continue;
+    allDates.push({ date: d, iso: toISO(d), cols });
+    if (cycleLenIdx !== -1 && cols[cycleLenIdx]) {
+      const cl = parseInt(cols[cycleLenIdx]);
+      if (cl >= 18 && cl <= 60) cycleLengthsFromFile.push(cl);
+    }
+  }
+
+  if (allDates.length === 0) throw new Error('No recognisable dates found in the file');
+
+  allDates.sort((a, b) => a.date - b.date);
+
+  // Check average gap between rows
+  let totalGap = 0;
+  let gapCount = 0;
+  for (let i = 1; i < allDates.length; i++) {
+    const gap = (allDates[i].date - allDates[i-1].date) / 86400000;
+    totalGap += gap;
+    gapCount++;
+  }
+  const avgGap = gapCount > 0 ? totalGap / gapCount : 1;
+
+  let periodStarts = [];
+
+  if (avgGap >= 18) {
+    // STRATEGY A: Each row IS a period start (summary format)
+    periodStarts = allDates.map(d => d.iso);
+    // Compute cycle lengths from gaps
+    for (let i = 1; i < allDates.length; i++) {
+      const gap = (allDates[i].date - allDates[i-1].date) / 86400000;
+      if (gap >= 18 && gap <= 60) cycleLengthsFromFile.push(gap);
+    }
+  } else {
+    // STRATEGY B: One row per day, detect period days by column value
+    const PERIOD_VALUES = new Set(['true','yes','1','light','medium','heavy','spotting','very light','moderate','super','tampon','pad','period','menstruation']);
+
+    let inPeriod = false;
+    let lastPeriodStart = null;
+
+    for (let i = 0; i < allDates.length; i++) {
+      const { date, iso, cols } = allDates[i];
+      let hasPeriod = false;
+
+      if (periodIdx !== -1 && cols[periodIdx]) {
+        hasPeriod = PERIOD_VALUES.has(cols[periodIdx].toLowerCase().trim());
+      } else {
+        // No explicit period column, look for any column with period-like value
+        hasPeriod = cols.some(c => {
+          const v = c.toLowerCase().trim();
+          return v === 'light' || v === 'medium' || v === 'heavy' || v === 'spotting' || v === 'menstruation';
+        });
+      }
+
+      if (hasPeriod) {
+        if (!inPeriod) {
+          // New period start, but check: could be continuation from prev day?
+          const isNewPeriod = !lastPeriodStart || (date - lastPeriodStart) / 86400000 > 3;
+          if (isNewPeriod) {
+            periodStarts.push(iso);
+            if (lastPeriodStart) {
+              const gap = (date - lastPeriodStart) / 86400000;
+              if (gap >= 18 && gap <= 60) cycleLengthsFromFile.push(gap);
+            }
+            lastPeriodStart = date;
+          }
+          inPeriod = true;
+        }
+      } else {
+        inPeriod = false;
+      }
+    }
+
+    // If still nothing found, maybe every row is a period day (period-only export)
+    if (periodStarts.length === 0) {
+      let prev = null;
+      for (const { date, iso } of allDates) {
+        const gap = prev ? (date - prev) / 86400000 : 999;
+        if (gap > 3) periodStarts.push(iso);
+        prev = date;
+      }
+    }
+  }
+
+  periodStarts = [...new Set(periodStarts)].sort();
+
+  const avgCycleLength = cycleLengthsFromFile.length > 0
+    ? Math.round(cycleLengthsFromFile.reduce((a,b)=>a+b,0) / cycleLengthsFromFile.length)
+    : 28;
+
+  return {
+    mostRecentPeriod: periodStarts[periodStarts.length - 1],
+    allPeriodStarts: periodStarts,
+    totalPeriods: periodStarts.length,
+    avgCycleLength: Math.min(Math.max(avgCycleLength, 18), 60),
+    periodLength: 5,
+    source: 'csv',
+    yearRange: periodStarts.length > 0 ? `${periodStarts[0].slice(0,4)} – ${periodStarts[periodStarts.length-1].slice(0,4)}` : '',
+  };
+}
+
+function showFloStatus(type, msg) {
+  const el = document.getElementById('floStatus');
+  el.style.display = 'block';
+  el.style.background = type === 'error' ? 'var(--menstrual-light)' : 'var(--ovulatory-light)';
+  el.style.border = '1px solid ' + (type === 'error' ? 'var(--menstrual-mid)' : 'var(--ovulatory-mid)');
+  el.style.color = type === 'error' ? 'var(--secondary)' : 'var(--accent)';
+  el.textContent = msg;
+}
+
+function showFloPreview(data) {
+  document.getElementById('floStatus').style.display = 'none';
+  const preview = document.getElementById('floPreview');
+  preview.style.display = 'block';
+
+  // Show year breakdown
+  const byYear = {};
+  data.allPeriodStarts.forEach(d => {
+    const y = d.slice(0,4);
+    byYear[y] = (byYear[y] || 0) + 1;
+  });
+  const yearRows = Object.entries(byYear).sort().map(([y,c]) =>
+    `<div class="stat-row"><span class="stat-label">${y}</span><span style="font-size:13px;color:var(--accent);">${c} period${c!==1?'s':''} logged</span></div>`
+  ).join('');
+
+  const recentList = data.allPeriodStarts.slice(-8).reverse().map(d => {
+    const dateObj = new Date(d + 'T00:00:00');
+    return `<span style="display:inline-block;background:var(--menstrual-light);border:1px solid var(--menstrual-mid);border-radius:4px;padding:2px 8px;font-size:11px;margin:2px;color:var(--secondary);">${dateObj.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</span>`;
+  }).join('');
+
+  document.getElementById('floPreviewContent').innerHTML = `
+    <div style="background:var(--ovulatory-light);border:1px solid var(--ovulatory-mid);border-radius:12px;padding:16px 20px;margin-bottom:16px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div class="stat-row"><span class="stat-label">Total periods imported</span><span class="stat-val" style="color:var(--accent);">${data.totalPeriods}</span></div>
+        <div class="stat-row"><span class="stat-label">Date range</span><span style="font-size:14px;font-weight:500;color:var(--accent);">${data.yearRange}</span></div>
+        <div class="stat-row"><span class="stat-label">Most recent period</span><span style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--secondary);">${new Date(data.mostRecentPeriod+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</span></div>
+        <div class="stat-row"><span class="stat-label">Avg cycle length</span><span class="stat-val">${data.avgCycleLength} days</span></div>
+        ${data.periodLength ? `<div class="stat-row" style="border-bottom:none;"><span class="stat-label">Avg period length</span><span class="stat-val">${data.periodLength} days</span></div>` : ''}
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">By year</div>
+      ${yearRows}
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Most recent periods</div>
+      <div>${recentList}</div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);font-style:italic;">
+      All ${data.totalPeriods} period start dates will be saved. Clara will use your most recent period and average cycle length for phase calculations, and store the full history for trend analysis.
+    </div>
+  `;
+}
+
+function confirmFloImport() {
+  if (!pendingFloData) return;
+  state.lastPeriodDate = pendingFloData.mostRecentPeriod;
+  state.cycleLength = pendingFloData.avgCycleLength;
+  state.periodLength = pendingFloData.periodLength || state.periodLength || 5;
+  // Store full history, migrate to periods[] structure
+  state.periodStarts = pendingFloData.allPeriodStarts;
+  // Merge with existing periods, preserving any end dates already logged
+  const existingByStart = {};
+  (state.periods || []).forEach(p => existingByStart[p.start] = p);
+  state.periods = pendingFloData.allPeriodStarts.map(s => existingByStart[s] || { start: s, end: null });
+  state.importedFrom = 'flo';
+  state.importedCount = pendingFloData.totalPeriods;
+  save();
+  updateAll();
+  document.getElementById('floPreview').style.display = 'none';
+  showFloStatus('success', `✓ ${pendingFloData.totalPeriods} periods imported from ${pendingFloData.yearRange}. Clara is now fully set up with your complete history.`);
+  pendingFloData = null;
+  setTimeout(() => showPage('today'), 2200);
+}
+
+function cancelFloImport() {
+  pendingFloData = null;
+  document.getElementById('floPreview').style.display = 'none';
+  document.getElementById('floStatus').style.display = 'none';
+  document.getElementById('floFileInput').value = '';
+}
+
+// ─── HORMONE DEEP DIVE ───
+
+const HORMONE_DATA = {
+  oestrogen: {
+    name: 'Oestrogen',
+    aka: 'The confidence hormone · The feminine powerhouse',
+    color: '#B01840',
+    light: '#f9f0f2',
+    oneLiner: 'The most famous female hormone: it builds you up, sharpens your mind, lifts your mood, and makes your body feel like your own. When it rises, you rise with it.',
+    cycleLevels: [
+      { phase: 'Menstrual', pct: 8, label: 'Very low' },
+      { phase: 'Follicular', pct: 65, label: 'Rising' },
+      { phase: 'Ovulatory', pct: 95, label: 'Peak' },
+      { phase: 'Luteal', pct: 38, label: 'Falling' },
+    ],
+    sections: [
+      { title: 'What it actually is', body: 'Oestrogen is not one hormone. It\'s a family. The three main forms are <strong>oestradiol</strong> (dominant in reproductive years, the most potent), <strong>oestrone</strong> (dominant post-menopause), and <strong>oestriol</strong> (made mainly during pregnancy). When we talk about oestrogen in the menstrual cycle, we mean oestradiol, produced primarily in the ovarian follicles as they mature each cycle.' },
+      { title: 'What it does in your body', body: '<strong>Brain:</strong> Oestrogen boosts serotonin, dopamine, and norepinephrine, the trifecta of mood, motivation, and focus. It also enhances neuroplasticity (your brain\'s ability to form new connections) and improves verbal fluency and memory.<br><br><strong>Metabolism:</strong> Helps regulate insulin sensitivity and fat storage patterns. When oestrogen is healthy, you burn fuel more efficiently.<br><br><strong>Body:</strong> Maintains bone density, supports cardiovascular health, keeps skin elastic and hydrated (oestrogen stimulates collagen production), and regulates vaginal and uterine tissue.' },
+      { title: 'How it affects your mood', body: 'Rising oestrogen is essentially a natural antidepressant. It increases serotonin receptor density, meaning serotonin hits harder. It also suppresses cortisol\'s impact on the brain, making you more resilient to stress.<br><br>When oestrogen drops sharply, either pre-menstrually or at perimenopause, many people experience low mood, irritability, brain fog, and anxiety. This isn\'t "in your head." It\'s a direct neurochemical withdrawal.' },
+      { title: 'Performance and cognition', body: 'Studies show oestrogen enhances verbal memory, fine motor skills, and cognitive flexibility. It also has anti-inflammatory properties that support faster muscle recovery after exercise, meaning physical performance peaks in the follicular and ovulatory phases when oestrogen is highest.<br><br>Researchers have found that oestrogen improves working memory and abstract reasoning, explaining why many people feel sharper and more articulate in the first half of their cycle.' },
+      { title: 'When it goes wrong', body: '<strong>Too low:</strong> Fatigue, brain fog, low libido, vaginal dryness, poor sleep, depression, bone loss (long-term). Common in perimenopause, post-pill recovery, or high-stress / under-eating states.<br><br><strong>Too high (oestrogen dominance):</strong> Heavy or painful periods, bloating, breast tenderness, mood swings, weight gain around hips. Often caused by low progesterone relative to oestrogen, or impaired oestrogen clearance via the liver.' },
+      { title: 'Supporting healthy oestrogen', body: '<strong>Cruciferous vegetables</strong> (broccoli, kale, Brussels sprouts) contain DIM, which supports healthy oestrogen metabolism and clearance.<br><br><strong>Fibre</strong> binds used oestrogen in the gut for elimination. Low fibre means oestrogen gets reabsorbed.<br><br><strong>Liver health</strong> matters: the liver detoxifies oestrogen. Excess alcohol impairs this process significantly.<br><br><strong>Seed cycling:</strong> Flaxseeds in the follicular phase are thought to support healthy oestrogen metabolism, though evidence is emerging.', full: true },
+    ],
+    tableRow: ['Very low ↓', 'Rising ↑', 'Peak ↑↑', 'Declining ↓'],
+    tableColors: ['#f0c0cc','#e8b0bc','#B01840','#c04060'],
+  },
+  progesterone: {
+    name: 'Progesterone',
+    aka: 'The calming hormone · The balancer',
+    color: '#7A2838',
+    light: '#f0f3fa',
+    oneLiner: 'Progesterone is the overlooked half of the hormonal equation. When balanced, it\'s your natural anxiolytic: calm, focused, and grounded. When it crashes, PMS arrives.',
+    cycleLevels: [
+      { phase: 'Menstrual', pct: 5, label: 'Near zero' },
+      { phase: 'Follicular', pct: 8, label: 'Very low' },
+      { phase: 'Ovulatory', pct: 20, label: 'Starting to rise' },
+      { phase: 'Luteal', pct: 88, label: 'Dominant' },
+    ],
+    sections: [
+      { title: 'What it actually is', body: 'Progesterone is produced by the <strong>corpus luteum</strong>, the temporary gland that forms in the ovary after an egg is released. If no pregnancy occurs, the corpus luteum breaks down around Day 22–24, progesterone plummets, and menstruation follows. If pregnancy occurs, progesterone continues rising to maintain the uterine lining and support early fetal development.' },
+      { title: 'What it does in your body', body: '<strong>Brain:</strong> Progesterone metabolises into <strong>allopregnanolone</strong>, which acts on GABA receptors, the brain\'s main inhibitory system. This is why balanced progesterone promotes a sense of calm and reduced anxiety.<br><br><strong>Body temperature:</strong> Progesterone raises basal body temperature by 0.2–0.5°C post-ovulation. This is how BBT tracking detects ovulation.<br><br><strong>Uterus:</strong> Prepares the uterine lining for implantation, reduces uterine contractions. Low progesterone is a key factor in luteal phase defects and some early miscarriages.' },
+      { title: 'How it affects mood and sleep', body: 'Adequate progesterone is deeply calming: its GABA action is similar (though gentler) to how anti-anxiety medications work. Many people feel pleasantly focused and inwardly grounded in the early luteal phase when progesterone is rising.<br><br>But when progesterone drops sharply in the late luteal phase (Days 24–28), the withdrawal of this calming effect triggers the classic PMS window: irritability, anxiety, emotional reactivity, and disrupted sleep. The sleep disruption happens because progesterone also enhances slow-wave (deep) sleep.' },
+      { title: 'Progesterone vs PMS', body: 'The severity of PMS is closely linked to how sharply progesterone drops, how well the liver metabolises it, and how sensitive your GABA receptors are to its withdrawal.<br><br>Some research suggests that in people with severe PMS or PMDD, the brain is unusually sensitive to normal progesterone fluctuations, not that their levels are necessarily abnormal. This is why PMDD can sometimes be treated with medications that stabilise GABA-receptor sensitivity.' },
+      { title: 'When it goes wrong', body: '<strong>Too low (luteal phase defect):</strong> Spotting before periods, short luteal phases, difficulty sustaining pregnancy, PMS, anxiety, insomnia. Common causes: stress (cortisol competes with progesterone), under-eating, low body weight, thyroid dysfunction.<br><br><strong>Note:</strong> There is no such thing as "progesterone dominance". Unlike oestrogen, progesterone is generally protective and calming. The problem is almost always insufficiency.' },
+      { title: 'Supporting healthy progesterone', body: '<strong>Vitex (chaste tree berry):</strong> Well-studied for supporting luteal phase progesterone, particularly in sub-fertile cycles. Needs 3+ months of consistent use.<br><br><strong>Vitamin B6 and zinc:</strong> Both support progesterone synthesis and reduce PMS severity in clinical trials.<br><br><strong>Magnesium:</strong> Helps the body respond to progesterone appropriately and reduces luteal phase anxiety.<br><br><strong>Stress management matters most:</strong> Chronic stress elevates cortisol, which directly competes with progesterone at receptor sites, even if levels look normal on paper.', full: true },
+    ],
+    tableRow: ['Near zero ↓↓', 'Very low ↓', 'Rising ↑', 'Dominant ↑↑'],
+    tableColors: ['#b8c8e8','#b8c8e8','#7A2838','#A63D52'],
+  },
+  testosterone: {
+    name: 'Testosterone',
+    aka: 'Not just for men · Drive, desire, and determination',
+    color: '#c04060',
+    light: '#faf2f4',
+    oneLiner: 'Testosterone is the hormone of desire, physical and ambition-driven. Women produce it too, in smaller amounts, and it shapes libido, confidence, and the will to act.',
+    cycleLevels: [
+      { phase: 'Menstrual', pct: 15, label: 'Low' },
+      { phase: 'Follicular', pct: 40, label: 'Rising' },
+      { phase: 'Ovulatory', pct: 72, label: 'Peak' },
+      { phase: 'Luteal', pct: 30, label: 'Declining' },
+    ],
+    sections: [
+      { title: 'What it actually is', body: 'Testosterone is an androgen, a steroid hormone produced in the ovaries and adrenal glands. Women produce roughly 10–20x less than men, but their tissues are highly sensitive to it. It\'s the precursor to oestradiol: the ovaries convert testosterone into oestrogen via an enzyme called aromatase. So healthy testosterone is actually a prerequisite for healthy oestrogen.' },
+      { title: 'What it does in your body', body: '<strong>Libido:</strong> The most direct driver of sexual desire in all genders: it acts on receptors in the brain\'s limbic system (the desire centre).<br><br><strong>Muscle and metabolism:</strong> Supports muscle protein synthesis, bone density, and fat metabolism. Adequate testosterone makes it easier to build and maintain muscle.<br><br><strong>Confidence and risk-taking:</strong> Acts on dopamine systems involved in reward-seeking and assertiveness. Higher testosterone correlates with greater willingness to take social and professional risks.<br><br><strong>Energy and motivation:</strong> Low testosterone is a common but under-recognised cause of fatigue and lack of drive in women.' },
+      { title: 'How it affects mood', body: 'Testosterone\'s mood effects in women are primarily through drive and agency, not aggression (that\'s a cultural myth amplified by extremes). When testosterone is healthy, you feel motivated, decisive, and capable. You want things and go after them.<br><br>When testosterone is low, the characteristic feeling is apathy, a kind of low-grade "can\'t be bothered" that\'s different from the tearfulness of low oestrogen or the anxiety of dropping progesterone. It can also reduce sexual interest significantly.' },
+      { title: 'The ovulation window', body: 'Testosterone peaks simultaneously with oestrogen in the ovulatory phase. This hormonal combination is why this window feels like your most charismatic, socially bold, and physically attractive self. Research shows that voice pitch, word choice, confidence in posture, and even the scent we produce all shift measurably around ovulation. This is the biological peak of outward expression in the cycle.' },
+      { title: 'When it goes wrong', body: '<strong>Too low:</strong> Low libido, apathy, fatigue, loss of motivation, difficulty building muscle. Can be caused by oral contraceptives (which suppress ovarian androgens and raise SHBG, binding available testosterone), chronic stress, or ageing.<br><br><strong>Too high (androgen excess):</strong> Acne, oily skin, excess facial/body hair, irregular cycles, or the presentation seen in PCOS (polycystic ovary syndrome) where testosterone and other androgens are chronically elevated.' },
+      { title: 'Supporting healthy testosterone', body: '<strong>Resistance training:</strong> One of the most evidence-based ways to support healthy androgen levels in women.<br><br><strong>Adequate dietary fat:</strong> All steroid hormones are made from cholesterol. Very low fat diets can impair testosterone synthesis.<br><br><strong>Zinc:</strong> Critical cofactor in testosterone production; also reduces the conversion of testosterone to oestrogen via aromatase.<br><br><strong>Sleep:</strong> Most sex hormone production happens during deep sleep. Poor sleep directly suppresses testosterone.', full: true },
+    ],
+    tableRow: ['Low ↓', 'Rising ↑', 'Peak ↑', 'Declining ↓'],
+    tableColors: ['#f0c0cc','#e8b0bc','#c04060','#d07888'],
+  },
+  fsh: {
+    name: 'FSH',
+    aka: 'Follicle-Stimulating Hormone · The recruiter',
+    color: '#B01840',
+    light: '#f9f0f2',
+    oneLiner: 'FSH is the signal that starts it all: it recruits a new batch of follicles at the start of every cycle, kickstarting the hormonal cascade that leads to ovulation.',
+    cycleLevels: [
+      { phase: 'Menstrual', pct: 35, label: 'Rising' },
+      { phase: 'Follicular', pct: 65, label: 'Elevated' },
+      { phase: 'Ovulatory', pct: 42, label: 'Dropping' },
+      { phase: 'Luteal', pct: 15, label: 'Suppressed' },
+    ],
+    sections: [
+      { title: 'What it actually is', body: 'FSH is a gonadotropin produced by the <strong>pituitary gland</strong>, a pea-sized gland at the base of the brain. The pituitary releases FSH in response to GnRH (gonadotropin-releasing hormone) from the hypothalamus. FSH then travels via the bloodstream to the ovaries, where it stimulates follicle growth. Each follicle contains an immature egg.' },
+      { title: 'The follicle race', body: 'At the start of each cycle, FSH stimulates a cohort of 5–20 follicles to begin developing. As they grow, they produce oestrogen. As oestrogen rises, it feeds back to the pituitary to <em>suppress</em> FSH, a form of negative feedback.<br><br>This falling FSH is actually what ensures only one egg usually matures: the largest, most oestrogen-producing follicle can survive on lower FSH, while the others atresia (shrink and are reabsorbed). This dominant follicle "wins" and eventually releases its egg.' },
+      { title: 'What it tells you about fertility', body: 'FSH levels are used clinically as a marker of <strong>ovarian reserve</strong>, the quantity and quality of remaining eggs. High FSH on Day 3 of your cycle suggests the pituitary is working harder to stimulate the ovaries, often indicating reduced ovarian reserve (common in perimenopause).<br><br>Low FSH can suggest hypothalamic dysfunction: the brain isn\'t signalling properly, which can cause absent or irregular periods. This is common in athletes, those with low body weight, or under high stress (hypothalamic amenorrhea).' },
+      { title: 'FSH and the mood connection', body: 'FSH itself doesn\'t directly affect mood. It\'s a signalling hormone rather than one with direct brain receptors. Its impact on wellbeing is indirect: it drives follicular growth, which drives oestrogen production, which then affects mood, cognition, and energy. So when FSH is doing its job well, you feel it in the follicular phase lift.', full: false },
+      { title: 'FSH in perimenopause', body: 'As ovarian reserve declines with age, FSH must rise higher and higher to achieve the same follicular response. Persistently elevated FSH (consistently above ~25 IU/L) alongside irregular cycles is a clinical indicator of perimenopause. Eventually, when ovarian response fails entirely and two consecutive years pass without a period, menopause is confirmed.<br><br>This rising FSH is why perimenopause can involve oestrogen fluctuations, the ovaries are producing erratic amounts in response to the pituitary\'s escalating demands.', full: true },
+    ],
+    tableRow: ['Rising ↑', 'Elevated ↑', 'Falling ↓', 'Suppressed ↓↓'],
+    tableColors: ['#fdeef1','#C0364A','#f0b0bc','#fdeef1'],
+  },
+  lh: {
+    name: 'LH',
+    aka: 'Luteinising Hormone · The ovulation trigger',
+    color: '#A63D52',
+    light: '#fdf0f3',
+    oneLiner: 'LH is the spark. Its surge, a dramatic 5–10x spike, is the single event that triggers ovulation. Without LH, there is no egg release.',
+    cycleLevels: [
+      { phase: 'Menstrual', pct: 10, label: 'Low' },
+      { phase: 'Follicular', pct: 22, label: 'Building' },
+      { phase: 'Ovulatory', pct: 98, label: '🔥 Peak Surge' },
+      { phase: 'Luteal', pct: 12, label: 'Low' },
+    ],
+    sections: [
+      { title: 'What it actually is', body: 'Like FSH, LH is a gonadotropin produced by the pituitary. For most of the cycle, LH stays relatively low. But when oestrogen reaches a critical threshold just before ovulation, the normal negative feedback mechanism flips to <strong>positive feedback</strong>: oestrogen suddenly triggers a massive LH release rather than suppressing it. This is the LH surge.' },
+      { title: 'The surge and ovulation', body: 'The LH surge is the most dramatic hormonal event of the entire cycle. LH spikes 5–10x above baseline and persists for 24–48 hours. This surge does several things simultaneously:<br><br>1. Triggers the final maturation of the egg inside the dominant follicle<br>2. Causes the follicle wall to rupture, releasing the egg<br>3. Converts the empty follicle into the <strong>corpus luteum</strong>, the structure that produces progesterone for the rest of the cycle<br><br>Ovulation itself occurs approximately 24–36 hours after the LH surge begins.' },
+      { title: 'LH testing and ovulation prediction', body: 'LH surge detection is the basis of all ovulation predictor kits (OPKs), at-home urine tests that detect the LH spike. A positive OPK means ovulation is expected within 24–36 hours.<br><br>However, a positive OPK doesn\'t confirm ovulation occurred. It only confirms the surge. In some conditions (like PCOS), LH can surge without triggering follicle rupture. Confirmation of ovulation requires either ultrasound or a post-ovulatory progesterone blood test.' },
+      { title: 'LH and body signals', body: 'The LH surge coincides with other observable ovulation signs:<br><br><strong>Cervical mucus</strong> becomes clear, slippery, and stretchy, like raw egg white, around the LH surge, creating a sperm-friendly environment.<br><br><strong>Cervical position</strong> rises and softens.<br><br><strong>Mittelschmerz:</strong> Some people feel a one-sided twinge or ache in the lower abdomen when the follicle ruptures.<br><br><strong>Temperature:</strong> Basal body temperature rises 0.2–0.5°C after ovulation due to progesterone, confirming (retrospectively) that ovulation occurred.' },
+      { title: 'When LH signalling goes wrong', body: '<strong>PCOS:</strong> LH is often elevated throughout the cycle (not just at ovulation), and the LH:FSH ratio is abnormally high. This disrupts normal follicle development and ovulation.<br><br><strong>Hypothalamic amenorrhea:</strong> LH pulsatility is suppressed: the hypothalamus stops sending GnRH pulses, so LH is chronically low. No surge, no ovulation. Common in those under extreme physical or psychological stress, or significantly undereating.', full: true },
+    ],
+    tableRow: ['Low ↓', 'Building', '🔥 Peak Surge ↑↑', 'Low ↓'],
+    tableColors: ['#fdf0f3','#f0c0cc','#A63D52','#fdf0f3'],
+  },
+  cortisol: {
+    name: 'Cortisol',
+    aka: 'The stress hormone · The cycle disruptor',
+    color: '#A63D52',
+    light: '#fdf0f3',
+    oneLiner: 'Cortisol doesn\'t get a phase: it runs parallel to your cycle and has the power to suppress, delay, or derail everything. Managing stress is cycle management.',
+    cycleLevels: [
+      { phase: 'Morning peak', pct: 90, label: 'Naturally high' },
+      { phase: 'Under stress', pct: 98, label: 'Chronically high' },
+      { phase: 'Luteal phase', pct: 55, label: 'Amplified by PMS' },
+      { phase: 'Well-rested', pct: 20, label: 'Healthy low' },
+    ],
+    sections: [
+      { title: 'What it actually is', body: 'Cortisol is a glucocorticoid hormone produced by the <strong>adrenal glands</strong> (which sit on top of the kidneys). Its primary role is to respond to stress, physical or psychological, by mobilising energy, suppressing non-essential functions, and sharpening immediate focus. Cortisol follows a natural daily rhythm: high in the morning (the cortisol awakening response, which helps you get out of bed) and low at night.' },
+      { title: 'How cortisol hijacks your cycle', body: 'The connection between stress and cycle disruption is direct and well-documented. Cortisol and reproductive hormones are made from the same precursor: <strong>pregnenolone</strong>. When the body is under chronic stress, it prioritises cortisol production, "stealing" pregnenolone away from progesterone and DHEA synthesis. This is called the "pregnenolone steal."<br><br>High cortisol also suppresses GnRH from the hypothalamus, reducing LH and FSH pulses. The result: delayed ovulation, shortened luteal phases, lower progesterone, or in severe cases, no ovulation at all (hypothalamic amenorrhea).' },
+      { title: 'Cortisol and PMS', body: 'In the late luteal phase, the body is already dealing with falling progesterone and oestrogen. If cortisol is also chronically elevated, it compounds the hormonal instability significantly.<br><br>High cortisol impairs sleep (especially progesterone\'s deep sleep benefit), increases inflammatory signalling (worsening cramps and bloating), dysregulates blood sugar (intensifying cravings), and amplifies emotional reactivity by reducing serotonin availability.' },
+      { title: 'The adrenal-thyroid-ovarian axis', body: 'The adrenal glands, thyroid, and ovaries communicate constantly. Chronic adrenal stress can suppress thyroid function (T3 conversion drops), which in turn disrupts ovulation and progesterone production. Thyroid dysfunction is one of the most underdiagnosed causes of irregular cycles, PMS, and infertility.<br><br>This interconnected axis explains why women under intense workload, caloric restriction, or chronic psychological stress often experience cycle changes first. The reproductive system is the body\'s most sensitive stress barometer.' },
+      { title: 'Signs your cortisol is disrupting your cycle', body: '• Cycles suddenly getting longer or shorter<br>• Ovulation moving later in the cycle under stress<br>• Brown spotting before your period (low progesterone)<br>• Worsening PMS during stressful periods<br>• Waking between 2–4am (a cortisol rhythm disturbance)<br>• Fatigue that doesn\'t improve with sleep<br>• Period disappearing entirely during extreme stress or illness' },
+      { title: 'Supporting healthy cortisol', body: '<strong>Adaptogens:</strong> Ashwagandha (KSM-66 form) has strong evidence for reducing cortisol and improving HPA axis regulation. Rhodiola rosea supports stress resilience without sedation.<br><br><strong>Magnesium glycinate:</strong> Reduces cortisol response and supports sleep quality, probably the most impactful single supplement for stress-related cycle disruption.<br><br><strong>Blood sugar stability:</strong> Each blood sugar crash triggers a cortisol spike. Eating protein and fat with carbohydrates prevents these cortisol spikes throughout the day.<br><br><strong>Sleep timing:</strong> Cortisol is highly sensitive to sleep timing: irregular sleep schedules (even if total hours are adequate) disrupt the cortisol awakening response and downstream hormone production.', full: true },
+    ],
+    tableRow: ['High AM, low PM', 'Same + rising', 'Amplified if stressed', 'High if stressed'],
+    tableColors: ['#E7D7C1','#d0c0a8','#A63D52','#4464AD'],
+  },
+};
+
+const HORMONE_TABLE_ROWS = [
+  { key: 'oestrogen', label: 'Oestrogen' },
+  { key: 'progesterone', label: 'Progesterone' },
+  { key: 'testosterone', label: 'Testosterone' },
+  { key: 'fsh', label: 'FSH' },
+  { key: 'lh', label: 'LH' },
+];
+
+// Which hormone is highest in the phase the user is in right now
+function dominantHormoneKey() {
+  const info = getCurrentCycleInfo();
+  if (!info) return 'oestrogen';
+  const phaseLabel = info.phase.charAt(0).toUpperCase() + info.phase.slice(1);
+  let best = null, bestPct = -1;
+  Object.entries(HORMONE_DATA).forEach(([key, h]) => {
+    // Cortisol's levels are labelled by time of day, not phase, so it never matches
+    const lvl = (h.cycleLevels || []).find(cl => cl.phase === phaseLabel);
+    if (lvl && lvl.pct > bestPct) { bestPct = lvl.pct; best = key; }
+  });
+  return best || 'oestrogen';
+}
+
+function showHormoneCard(key) {
+  // Update tab buttons
+  document.querySelectorAll('.hormone-tab-btn').forEach(b => b.classList.remove('active'));
+  const keys = ['oestrogen','progesterone','testosterone','fsh','lh','cortisol'];
+  const idx = keys.indexOf(key);
+  document.querySelectorAll('.hormone-tab-btn')[idx]?.classList.add('active');
+
+  const h = HORMONE_DATA[key];
+  const isCortisol = key === 'cortisol';
+
+  const barsHTML = h.cycleLevels.map(cl => `
+    <div class="h-cycle-bar-row">
+      <div class="h-cycle-bar-label">${cl.phase}</div>
+      <div class="h-cycle-bar-track">
+        <div class="h-cycle-bar-fill" style="width:${cl.pct}%;"></div>
+      </div>
+      <div style="font-size:9px;opacity:0.6;white-space:nowrap;">${cl.label}</div>
+    </div>
+  `).join('');
+
+  const sectionsHTML = h.sections.map(s => `
+    <div class="h-section${s.full ? ' h-full' : ''}">
+      <div class="h-section-title">${s.title}</div>
+      <div class="h-section-body">${s.body}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('hormoneCardContent').innerHTML = `
+    <div class="h-hero" style="background:${h.light};border:1px solid ${h.color}22;">
+      <div>
+        <div class="h-name" style="color:${h.color};">${h.name}</div>
+        <div class="h-aka">${h.aka}</div>
+        <div class="h-one-liner">${h.oneLiner}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;opacity:0.5;margin-bottom:10px;text-align:right;">Levels across cycle</div>
+        <div class="h-cycle-bars" style="background:${h.color}33;padding:14px;border-radius:10px;">
+          ${barsHTML}
+        </div>
+      </div>
+    </div>
+    <div class="h-grid">${sectionsHTML}</div>
+  `;
+
+  // Build hormone table
+  const tbody = document.getElementById('hormoneTable');
+  if (tbody) {
+    tbody.innerHTML = HORMONE_TABLE_ROWS.map(row => {
+      const hd = HORMONE_DATA[row.key];
+      const cells = hd.tableRow.map((val, i) => {
+        const bg = hd.tableColors[i];
+        const isLight = i < 2 || (row.key === 'progesterone' && i < 2) || (row.key === 'fsh' && i === 3) || (row.key === 'lh' && i !== 2);
+        const textColor = parseInt(bg.replace('#',''), 16) > 0xaaaaaa ? '#3a0820' : '#ffffff';
+        return `<td style="text-align:center;"><span class="level-badge" style="background:${bg};color:${textColor};">${val}</span></td>`;
+      }).join('');
+      return `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${hd.color};margin-right:8px;vertical-align:middle;"></span>${hd.name}</td>${cells}</tr>`;
+    }).join('');
+  }
+}
+
+
+
+// ─── FUN FEATURES ───
+
+const ACHIEVEMENTS = [
+  { id: 'first_log',    icon: '🌱', name: 'First Entry',      desc: 'You started. That\'s everything.',           check: (s) => Object.keys(s.logs).length >= 1 },
+  { id: 'streak_3',     icon: '🔥', name: '3-Day Streak',     desc: 'Three days in a row. You\'re in the habit.', check: (s) => getCurrentStreak(s) >= 3 },
+  { id: 'streak_7',     icon: '⚡', name: 'Week Warrior',      desc: 'Seven consecutive days logged.',             check: (s) => getCurrentStreak(s) >= 7 },
+  { id: 'streak_28',    icon: '🏆', name: 'Full Cycle',        desc: 'A whole cycle logged. Legendary.',           check: (s) => getLongestStreak(s) >= 28 },
+  { id: 'moods_5',      icon: '🎭', name: 'Full Spectrum',     desc: 'Logged all 5 mood types.',                   check: (s) => new Set(Object.values(s.logs).map(l=>l.mood).filter(Boolean)).size >= 5 },
+  { id: 'notes_10',     icon: '📓', name: 'Dear Diary',        desc: '10 entries with notes.',                     check: (s) => Object.values(s.logs).filter(l=>l.notes?.trim()).length >= 10 },
+  { id: 'symptoms_all', icon: '🔬', name: 'Body Detective',    desc: 'Logged 10 different symptoms.',              check: (s) => new Set(Object.values(s.logs).flatMap(l=>l.symptoms||[])).size >= 10 },
+  { id: 'periods_6',    icon: '🗓️', name: 'Historian',         desc: 'Logged 6 or more periods.',                  check: (s) => (s.periods||[]).length >= 6 },
+  { id: 'periods_12',   icon: '💫', name: 'Year in Review',    desc: 'A full year of period history.',             check: (s) => (s.periods||[]).length >= 12 },
+];
+
+function getCurrentStreak(s) {
+  const logs = s.logs || {};
+  const todayD = today();
+  let streak = 0;
+  let d = new Date();
+  while (true) {
+    const ds = d.toISOString().slice(0,10);
+    if (logs[ds]) { streak++; d.setDate(d.getDate()-1); }
+    else if (ds === todayD) { d.setDate(d.getDate()-1); } // skip today if not logged yet
+    else break;
+  }
+  return streak;
+}
+
+function getLongestStreak(s) {
+  const dates = Object.keys(s.logs || {}).sort();
+  if (!dates.length) return 0;
+  let best = 1, cur = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const gap = (new Date(dates[i]) - new Date(dates[i-1])) / 86400000;
+    if (gap === 1) { cur++; best = Math.max(best, cur); }
+    else cur = 1;
+  }
+  return best;
+}
+
+function getEarnedAchievements() {
+  return ACHIEVEMENTS.filter(a => { try { return a.check(state); } catch(e) { return false; } });
+}
+
+function renderAlterEgo(phase) {
+  const p = PHASES[phase];
+  if (!p || !p.alterEgo) return;
+  const card = document.getElementById('alterEgoCard');
+  card.style.display = 'block';
+  card.style.background = p.light;
+  card.style.borderColor = p.mid || 'var(--border)';
+
+  const perks = p.alterEgoPerks.map(x => `<li style="margin-bottom:4px;">${x}</li>`).join('');
+  const warnings = p.alterEgoWarnings.map(x => `<li style="margin-bottom:4px;opacity:0.7;">${x}</li>`).join('');
+
+  document.getElementById('alterEgoContent').innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Your phase alter ego</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:${p.textColor};margin-bottom:6px;">${p.emoji} ${p.alterEgo}</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text);margin-bottom:14px;font-style:italic;">"${p.alterEgoDesc}"</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Her superpowers</div>
+            <ul style="font-size:12px;color:var(--text);line-height:1.7;padding-left:14px;">${perks}</ul>
+          </div>
+          <div>
+            <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Handle with care</div>
+            <ul style="font-size:12px;color:var(--text);line-height:1.7;padding-left:14px;">${warnings}</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPredictions(info) {
+  if (!info) return;
+  const card = document.getElementById('predictionCard');
+  card.style.display = 'block';
+
+  const logs = state.logs || {};
+  const allLogs = Object.values(logs);
+
+  // Calculate average mood per phase from history
+  const phaseMoodMap = {};
+  Object.entries(logs).forEach(([d, log]) => {
+    const ph = log.phase;
+    if (!ph || !log.mood) return;
+    if (!phaseMoodMap[ph]) phaseMoodMap[ph] = [];
+    phaseMoodMap[ph].push(log.mood);
+  });
+
+  const moodScore = { radiant:5, good:4, neutral:3, low:2, difficult:1 };
+  const moodLabel = { 5:'radiant 😄', 4:'pretty good 🙂', 3:'fairly neutral 😐', 2:'a bit low 😔', 1:'rough 😞' };
+
+  function avgMoodForPhase(phase) {
+    const moods = phaseMoodMap[phase];
+    if (!moods || moods.length < 2) return null;
+    const avg = moods.reduce((a,m) => a + (moodScore[m]||3), 0) / moods.length;
+    return moodLabel[Math.round(avg)] || null;
+  }
+
+  // Next phase
+  const cl = state.cycleLength || 28;
+  const pl = state.periodLength || 5;
+  const nextPhase = getPhaseForDay(((info.cycleDay) % cl) + 1, cl, pl);
+  const daysToNextPhase = (() => {
+    for (let i = 1; i <= cl; i++) {
+      const ph = getPhaseForDay(info.cycleDay + i, cl, pl);
+      if (ph !== info.phase) return i;
+    }
+    return cl;
+  })();
+
+  const nextP = PHASES[nextPhase];
+  const nextMood = avgMoodForPhase(nextPhase);
+  const nextMoodLine = nextMood && allLogs.length >= 5
+    ? `Based on your history, you tend to feel <strong>${nextMood}</strong> during this phase.`
+    : `You'll be entering your ${nextP.name} phase.`;
+
+  // Most common upcoming symptom
+  const upcomingSymptoms = (phaseMoodMap[nextPhase] || []).length > 0
+    ? Object.entries(
+        Object.values(logs)
+          .filter(l => l.phase === nextPhase && l.symptoms?.length)
+          .flatMap(l => l.symptoms)
+          .reduce((acc, s) => { acc[s]=(acc[s]||0)+1; return acc; }, {})
+      ).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([s])=>s)
+    : [];
+
+  const symptomLine = upcomingSymptoms.length
+    ? `You've often reported <strong>${upcomingSymptoms.join(' and ')}</strong> during this phase.`
+    : '';
+
+  document.getElementById('predictionContent').innerHTML = `
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Coming up in ${daysToNextPhase} day${daysToNextPhase!==1?'s':''}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:${nextP.textColor};">${nextP.emoji} ${nextP.alterEgo || nextP.name} incoming</div>
+    </div>
+    <div style="font-size:13px;line-height:1.8;color:var(--text);">${nextMoodLine}${symptomLine ? '<br>' + symptomLine : ''}</div>
+    ${allLogs.length < 5 ? '<div style="margin-top:8px;font-size:11px;color:var(--muted);font-style:italic;">Log more days to unlock personalised predictions based on your real patterns.</div>' : ''}
+  `;
+}
+
+function renderStreak() {
+  const streak = getCurrentStreak(state);
+  const longest = getLongestStreak(state);
+  const totalLogs = Object.keys(state.logs || {}).length;
+  const earned = getEarnedAchievements();
+
+  const streakEmoji = streak >= 28 ? '🏆' : streak >= 14 ? '💫' : streak >= 7 ? '⚡' : streak >= 3 ? '🔥' : '✦';
+
+  document.getElementById('streakContent').innerHTML = `
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Logging streak</div>
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;color:var(--secondary);line-height:1;">${streak}</div>
+      <div style="font-size:14px;color:var(--muted);">day${streak!==1?'s':''} ${streakEmoji}</div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Best: ${longest} · Total: ${totalLogs} logs</div>
+    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Achievements (${earned.length}/${ACHIEVEMENTS.length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      ${ACHIEVEMENTS.map(a => {
+        const got = earned.find(e => e.id === a.id);
+        return `<div title="${a.name}: ${a.desc}" style="padding:5px 10px;border-radius:20px;font-size:11px;background:${got ? 'var(--menstrual-light)' : 'var(--bg)'};border:1px solid ${got ? 'var(--menstrual-mid)' : 'var(--border)'};color:${got ? 'var(--secondary)' : 'var(--muted)'};opacity:${got ? 1 : 0.45};cursor:default;">
+          ${a.icon} ${a.name}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderFunStats() {
+  const logs = state.logs || {};
+  const allLogs = Object.values(logs);
+  if (allLogs.length < 3) {
+    document.getElementById('funStatsContent').innerHTML = `
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Your patterns</div>
+      <div style="font-size:13px;color:var(--muted);font-style:italic;">Log at least 3 days to unlock your personal stats.</div>`;
+    return;
+  }
+
+  const moodCounts = {};
+  const energyByPhase = { menstrual:[], follicular:[], ovulatory:[], luteal:[] };
+  const dayOfWeekMood = Array.from({length:7}, () => []);
+
+  allLogs.forEach(log => {
+    if (log.mood) moodCounts[log.mood] = (moodCounts[log.mood]||0)+1;
+    if (log.phase && log.energy) energyByPhase[log.phase]?.push(log.energy);
+  });
+
+  Object.entries(logs).forEach(([d, log]) => {
+    if (log.mood) {
+      const dow = new Date(d+'T00:00:00').getDay();
+      dayOfWeekMood[dow].push(log.mood);
+    }
+  });
+
+  const topMood = Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0];
+  const moodMeta = topMood ? { radiant:'😄',good:'🙂',neutral:'😐',low:'😔',difficult:'😞' }[topMood[0]] : null;
+
+  const highestEnergyPhase = Object.entries(energyByPhase)
+    .map(([ph, vals]) => [ph, vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0])
+    .filter(([,v]) => v > 0)
+    .sort((a,b) => b[1]-a[1])[0];
+
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const moodScore = { radiant:5, good:4, neutral:3, low:2, difficult:1 };
+  const bestDow = dayOfWeekMood
+    .map((moods, i) => [i, moods.length ? moods.reduce((a,m)=>a+(moodScore[m]||3),0)/moods.length : 0])
+    .filter(([,v]) => v > 0)
+    .sort((a,b)=>b[1]-a[1])[0];
+
+  const topSymptom = Object.entries(
+    allLogs.flatMap(l=>l.symptoms||[]).reduce((acc,s)=>{acc[s]=(acc[s]||0)+1;return acc;},{})
+  ).sort((a,b)=>b[1]-a[1])[0];
+
+  const stats = [
+    topMood ? `${moodMeta} Most common mood: <strong>${topMood[0]}</strong> (${topMood[1]}×)` : null,
+    highestEnergyPhase ? `⚡ Most energetic phase: <strong>${highestEnergyPhase[0]}</strong> (avg ${highestEnergyPhase[1].toFixed(1)}/10)` : null,
+    bestDow ? `📅 Best day of the week: <strong>${dayNames[bestDow[0]]}</strong>` : null,
+    topSymptom ? `🔁 Most logged symptom: <strong>${topSymptom[0]}</strong> (${topSymptom[1]}×)` : null,
+  ].filter(Boolean);
+
+  document.getElementById('funStatsContent').innerHTML = `
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Your patterns</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${stats.map(s => `<div style="font-size:13px;color:var(--text);line-height:1.6;">${s}</div>`).join('')}
+    </div>
+  `;
+}
+
+
+
+function switchLogTab(tab) {
+  document.getElementById('logPanel-entry').style.display = tab === 'entry' ? 'block' : 'none';
+  document.getElementById('logPanel-history').style.display = tab === 'history' ? 'block' : 'none';
+  document.querySelectorAll('.log-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('logTab-' + tab)?.classList.add('active');
+  if (tab === 'history') renderHistory();
+}
+
+// ─── HISTORY PAGE ───
+let historyFilter = 'all';
+
+const MOOD_META = {
+  radiant:   { emoji: '😄', color: '#4A8C5C', bg: '#eef7f1', label: 'Radiant' },
+  good:      { emoji: '🙂', color: '#B89A20', bg: '#fdf8e0', label: 'Good' },
+  neutral:   { emoji: '😐', color: '#7a8e88', bg: '#f0f5f3', label: 'Neutral' },
+  low:       { emoji: '😔', color: '#4A6AAE', bg: '#eef2fb', label: 'Low' },
+  difficult: { emoji: '😞', color: '#B01840', bg: '#fdeef1', label: 'Difficult' },
+};
+
+function setHistoryFilter(filter, btn) {
+  historyFilter = filter;
+  document.querySelectorAll('.history-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistory();
+}
+
+function renderHistory() {
+  const logs = state.logs || {};
+  const allDates = Object.keys(logs).sort().reverse();
+
+  if (allDates.length === 0) {
+    document.getElementById('historyEntries').innerHTML = `
+      <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:32px;margin-bottom:12px;">📓</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:8px;color:var(--secondary);">No entries yet</div>
+        <div style="font-size:13px;">Head to Log Day to start tracking your mood, energy and symptoms.</div>
+      </div>`;
+    document.getElementById('moodTrendStrip').innerHTML = '';
+    document.getElementById('symptomSummary').innerHTML = '<div style="font-size:13px;color:var(--muted);">Log some days first to see your symptom patterns.</div>';
+    return;
+  }
+
+  // ── Mood trend strip (all logged days, oldest → newest) ──
+  const allDatesAsc = [...allDates].reverse();
+  const strip = document.getElementById('moodTrendStrip');
+  document.getElementById('moodTrendSubtitle').textContent =
+    `${allDatesAsc.length} days logged · ${allDatesAsc[0].slice(0,7)} to ${allDatesAsc[allDatesAsc.length-1].slice(0,7)}`;
+
+  strip.innerHTML = allDatesAsc.map(d => {
+    const log = logs[d];
+    const mood = log.mood;
+    const m = MOOD_META[mood];
+    const dateLabel = new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    if (m) {
+      return `<div class="mood-dot" style="background:${m.bg};color:${m.color};border:1px solid ${m.color}33;" title="${dateLabel} · ${m.label}">${m.emoji}</div>`;
+    }
+    return `<div class="mood-dot" style="background:var(--border);" title="${dateLabel} · no mood logged">·</div>`;
+  }).join('');
+
+  // ── Symptom frequency ──
+  const symptomCounts = {};
+  allDates.forEach(d => {
+    (logs[d].symptoms || []).forEach(s => {
+      symptomCounts[s] = (symptomCounts[s] || 0) + 1;
+    });
+  });
+  const topSymptoms = Object.entries(symptomCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+  const maxCount = topSymptoms[0]?.[1] || 1;
+
+  document.getElementById('symptomSummary').innerHTML = topSymptoms.length === 0
+    ? '<div style="font-size:13px;color:var(--muted);">No symptoms logged yet.</div>'
+    : topSymptoms.map(([sym, count]) => `
+        <div class="symptom-bar-row">
+          <div class="symptom-bar-label">${sym}</div>
+          <div class="symptom-bar-track">
+            <div class="symptom-bar-fill" style="width:${Math.round((count/maxCount)*100)}%;"></div>
+          </div>
+          <div class="symptom-bar-count">${count}×</div>
+        </div>`).join('');
+
+  // ── Filter and render log entries ──
+  let filtered = allDates.filter(d => {
+    const log = logs[d];
+    if (historyFilter === 'all') return true;
+    if (historyFilter === 'has-notes') return log.notes && log.notes.trim();
+    return log.mood === historyFilter;
+  });
+
+  if (filtered.length === 0) {
+    document.getElementById('historyEntries').innerHTML =
+      '<div style="font-size:13px;color:var(--muted);padding:20px 0;">No entries match this filter.</div>';
+    return;
+  }
+
+  // Group by month
+  const byMonth = {};
+  filtered.forEach(d => {
+    const key = d.slice(0, 7); // YYYY-MM
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(d);
+  });
+
+  const entriesHTML = Object.entries(byMonth).map(([month, dates]) => {
+    const [y, m] = month.split('-');
+    const monthLabel = new Date(parseInt(y), parseInt(m)-1, 1).toLocaleDateString('en-GB', { month:'long', year:'numeric' });
+
+    const entryCards = dates.map(d => {
+      const log = logs[d];
+      const dateObj = new Date(d + 'T00:00:00');
+      const dateLabel = dateObj.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+      const mood = log.mood ? MOOD_META[log.mood] : null;
+      const phase = log.phase || null;
+      const phaseColors = {
+        menstrual: 'var(--menstrual)', follicular: 'var(--follicular)',
+        ovulatory: 'var(--ovulatory)', luteal: 'var(--luteal)'
+      };
+
+      const moodBadge = mood
+        ? `<span class="history-mood-badge" style="background:${mood.bg};color:${mood.color};">${mood.emoji} ${mood.label}</span>`
+        : '';
+
+      const phaseBadge = phase
+        ? `<span style="font-size:11px;padding:3px 9px;border-radius:20px;background:${phaseColors[phase]}22;color:${phaseColors[phase]};border:1px solid ${phaseColors[phase]}44;text-transform:capitalize;">${phase}</span>`
+        : '';
+
+      const energyBar = log.energy
+        ? `<div class="history-energy-bar">
+            <span>Energy</span>
+            <div class="history-energy-track">
+              <div class="history-energy-fill" style="width:${(log.energy/10)*100}%;"></div>
+            </div>
+            <span>${log.energy}/10</span>
+           </div>`
+        : '';
+
+      const symptoms = (log.symptoms || []).length > 0
+        ? `<div class="history-symptoms">
+            ${log.symptoms.map(s => `<span class="history-symptom-tag">${escapeHtml(s)}</span>`).join('')}
+           </div>`
+        : '';
+
+      const notes = log.notes && log.notes.trim()
+        ? `<div class="history-notes">${escapeHtml(log.notes.trim())}</div>`
+        : '';
+
+      return `
+        <div class="history-entry">
+          <div class="history-entry-date">${dateLabel}</div>
+          <div class="history-entry-meta">
+            ${moodBadge}${phaseBadge}${energyBar}
+          </div>
+          ${symptoms}
+          ${notes}
+          ${!mood && !log.energy && log.symptoms?.length === 0 && !log.notes
+            ? '<div style="font-size:12px;color:var(--muted);font-style:italic;">No details logged for this day.</div>'
+            : ''}
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:28px;">
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-left:4px;">${monthLabel} · ${dates.length} entr${dates.length !== 1 ? 'ies' : 'y'}</div>
+        ${entryCards}
+      </div>`;
+  }).join('');
+
+  document.getElementById('historyEntries').innerHTML = entriesHTML;
+}
+
+// ─── INIT ───
+// Load persisted state before rendering
+loadState();
+updateAll();
+initPeriodInputs();
+
+// Auto-save whenever the user leaves the page or hides the tab
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    save();
+    console.log('Clara: auto-saved on visibility change');
+  }
+});
+window.addEventListener('beforeunload', () => { save(); });
+window.addEventListener('pagehide', () => { save(); });
+showInsight(getCurrentCycleInfo()?.phase || 'menstrual');
+showHormoneCard(dominantHormoneKey());
+</script>
+
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--secondary);color:var(--main);padding:16px 20px;z-index:200;display:none;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.15);">
+  <div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;font-style:italic;">Add Clara to your home screen</div>
+    <div style="font-size:11px;opacity:0.7;margin-top:2px;">Tap Share → Add to Home Screen (iOS) or Install App (Android)</div>
+  </div>
+  <button onclick="document.getElementById('installBanner').style.display='none'" style="background:rgba(255,255,255,0.15);border:none;color:#f5d8e0;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap;">Got it</button>
+</div>
+
+<script>
+// Show install hint after 4 seconds if not already installed
+setTimeout(() => {
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone && !localStorage.getItem('clara_install_dismissed')) {
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'flex';
+  }
+}, 4000);
+
+document.getElementById('installBanner')?.addEventListener('click', () => {
+  localStorage.setItem('clara_install_dismissed', '1');
+});
+</script>
+
+</body>
+</html>
