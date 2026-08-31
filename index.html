@@ -1215,12 +1215,33 @@ body {
 
         <div class="card" style="margin-bottom:20px;background:var(--bg);border-color:var(--border);">
           <div class="card-title">Storage & Data</div>
-          <div class="card-subtitle">All your data is saved locally in your browser</div>
+          <div class="card-subtitle">Kept on this device, in more than one place</div>
           <div id="storageInfo" style="font-size:13px;color:var(--text);line-height:1.8;"></div>
           <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
             <button class="btn-secondary" onclick="exportData()" style="font-size:12px;padding:8px 16px;">⬇ Export backup</button>
             <button class="btn-secondary" onclick="document.getElementById('importBackupInput').click()" style="font-size:12px;padding:8px 16px;">⬆ Restore backup</button>
             <input type="file" id="importBackupInput" accept=".json" style="display:none;" onchange="importBackup(event)">
+            <button class="btn-secondary" onclick="protectMyData()" style="font-size:12px;padding:8px 16px;">🔒 Protect my data</button>
+            <button class="btn-secondary" onclick="repairStorage()" style="font-size:12px;padding:8px 16px;">↻ Check &amp; repair</button>
+          </div>
+          <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Auto-backup to a file</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">
+              Pick a file once and Clara rewrites it every time you log something — put it in
+              iCloud Drive, Dropbox or Google Drive and your entries are backed up off this
+              device automatically. Chrome or Edge on a computer.
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn-secondary" onclick="chooseBackupFile()" style="font-size:12px;padding:8px 16px;">📄 Choose backup file</button>
+              <button class="btn-secondary" onclick="stopFileBackup()" style="font-size:12px;padding:8px 16px;">Turn off</button>
+            </div>
+          </div>
+          <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Earlier versions</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px;">
+              Clara keeps the last 20 versions of your data, so a mistake or a bad restore can always be undone.
+            </div>
+            <div id="snapshotList" style="display:flex;flex-direction:column;gap:4px;"></div>
           </div>
         </div>
 
@@ -1414,6 +1435,7 @@ let state = {
   periods: [],        // [{start:'YYYY-MM-DD', end:'YYYY-MM-DD'|null}]
   importedFrom: null,
   importedCount: 0,
+  updatedAt: null,    // set on every save, used to reconcile the backup copies
 };
 
 let calViewDate = new Date();
@@ -2186,88 +2208,465 @@ function showPage(name) {
 }
 
 // ─── PERSISTENCE ───
-function save() {
+// Clara keeps your data in three independent places on this device:
+//   1. localStorage — fast, synchronous, written on every change
+//   2. IndexedDB    — bigger quota, survives some clears localStorage doesn't
+//   3. Snapshots    — the last 20 versions, in IndexedDB, so a bad write or a
+//                     bad import can always be rolled back
+// On every load the three are reconciled: whichever store has more data heals
+// the others, so losing one never loses the entries.
+// Optionally Clara also mirrors every change to a real .json file on disk.
+const LS_KEY = 'clara_state';
+const DB_NAME = 'clara';
+const DB_VERSION = 1;
+const STORE_STATE = 'state';
+const STORE_SNAPSHOTS = 'snapshots';
+const STORE_META = 'meta';
+const MAX_SNAPSHOTS = 20;
+const SNAPSHOT_INTERVAL_MS = 60 * 60 * 1000; // at most one automatic snapshot per hour
+
+let storageHealth = {
+  localStorage: 'unknown',   // 'ok' | 'failed'
+  indexedDB: 'unknown',      // 'ok' | 'unavailable'
+  persisted: null,           // true | false | null (unknown)
+  lastSave: null,
+  lastFileBackup: null,
+  backupFileName: null,
+  snapshotCount: 0,
+  lastError: null,
+};
+
+// ─── IndexedDB helpers ───
+let dbPromise = null;
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined' || !indexedDB) { reject(new Error('IndexedDB unavailable')); return; }
+    let req;
+    try { req = indexedDB.open(DB_NAME, DB_VERSION); }
+    catch (e) { reject(e); return; }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_STATE)) db.createObjectStore(STORE_STATE);
+      if (!db.objectStoreNames.contains(STORE_SNAPSHOTS)) db.createObjectStore(STORE_SNAPSHOTS, { keyPath: 'id', autoIncrement: true });
+      if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('Could not open IndexedDB'));
+    req.onblocked = () => reject(new Error('IndexedDB blocked by another tab'));
+  });
+  dbPromise.catch(() => { dbPromise = null; });
+  return dbPromise;
+}
+
+function idbReq(req) {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbDone(tx) {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
+  });
+}
+
+async function idbGet(storeName, key) {
+  const db = await openDB();
+  return idbReq(db.transaction(storeName, 'readonly').objectStore(storeName).get(key));
+}
+
+async function idbPut(storeName, value, key) {
+  const db = await openDB();
+  const tx = db.transaction(storeName, 'readwrite');
+  const store = tx.objectStore(storeName);
+  const result = await idbReq(key === undefined ? store.put(value) : store.put(value, key));
+  await idbDone(tx);
+  return result;
+}
+
+async function idbAll(storeName) {
+  const db = await openDB();
+  return idbReq(db.transaction(storeName, 'readonly').objectStore(storeName).getAll());
+}
+
+async function idbDelete(storeName, key) {
+  const db = await openDB();
+  const tx = db.transaction(storeName, 'readwrite');
+  await idbReq(tx.objectStore(storeName).delete(key));
+  await idbDone(tx);
+}
+
+// ─── Ask the browser not to evict Clara's data ───
+// Without this, Safari clears site data after ~7 days of not opening the app.
+async function requestPersistentStorage() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) { storageHealth.persisted = null; return null; }
+    if (await navigator.storage.persisted()) { storageHealth.persisted = true; return true; }
+    const granted = await navigator.storage.persist();
+    storageHealth.persisted = granted;
+    console.log('Clara: persistent storage', granted ? 'granted' : 'not granted');
+    return granted;
+  } catch (e) {
+    console.warn('Clara: could not request persistent storage:', e);
+    storageHealth.persisted = null;
+    return null;
+  }
+}
+
+// ─── Saving ───
+function countEntries(obj) {
+  if (!obj || typeof obj !== 'object') return 0;
+  return Object.keys(obj.logs || {}).length + (Array.isArray(obj.periods) ? obj.periods.length : 0);
+}
+
+function save(opts) {
+  const options = opts || {};
+  state.updatedAt = new Date().toISOString();
+
+  let ok = false;
   try {
     const serialized = JSON.stringify(state);
-    localStorage.setItem('clara_state', serialized);
+    localStorage.setItem(LS_KEY, serialized);
     // Verify write succeeded
-    const readback = localStorage.getItem('clara_state');
+    const readback = localStorage.getItem(LS_KEY);
     if (!readback) throw new Error('Write did not persist');
     // Spot-check: key count should match
     const written = JSON.parse(readback);
     const logCountOk = Object.keys(written.logs || {}).length === Object.keys(state.logs || {}).length;
     if (!logCountOk) throw new Error('Log count mismatch after write');
+    ok = true;
   } catch (e) {
     console.error('Clara save error:', e);
     // Retry once after clearing non-essential data
     try {
       localStorage.removeItem('clara_install_dismissed');
-      localStorage.setItem('clara_state', JSON.stringify(state));
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
       console.log('Clara: save succeeded on retry');
+      ok = true;
     } catch (e2) {
       console.error('Clara: save failed permanently:', e2);
-      showToast('⚠️ Could not save data. Storage may be full or blocked in your browser settings');
+      storageHealth.lastError = e2.message;
+      // localStorage is gone, but the IndexedDB mirror below may still take it
+      showToast('⚠️ Browser storage is full or blocked — saving to backup copy instead');
     }
+  }
+  storageHealth.localStorage = ok ? 'ok' : 'failed';
+  if (ok) storageHealth.lastSave = state.updatedAt;
+
+  // Mirror to the other stores. These are async and deliberately never block
+  // the UI or a page-unload save; the synchronous write above is the guarantee.
+  mirrorState(options).catch(e => console.warn('Clara: mirror failed:', e));
+  return ok;
+}
+
+async function mirrorState(options) {
+  const copy = JSON.parse(JSON.stringify(state));
+  try {
+    await idbPut(STORE_STATE, copy, 'current');
+    storageHealth.indexedDB = 'ok';
+    if (storageHealth.localStorage === 'failed') storageHealth.lastSave = state.updatedAt;
+  } catch (e) {
+    storageHealth.indexedDB = 'unavailable';
+    console.warn('Clara: IndexedDB mirror unavailable:', e);
+  }
+  await maybeSnapshot(copy, options);
+  await writeBackupFile(false);
+  if (document.getElementById('page-setup')?.classList.contains('active')) renderStorageInfo();
+}
+
+// ─── Rolling snapshots ───
+async function maybeSnapshot(data, options) {
+  const opts = options || {};
+  if (countEntries(data) === 0) return; // nothing worth keeping a version of yet
+  try {
+    const lastAt = await idbGet(STORE_META, 'lastSnapshotAt').catch(() => null);
+    const elapsed = Date.now() - (Date.parse(lastAt || '') || 0);
+    if (!opts.snapshot && elapsed < SNAPSHOT_INTERVAL_MS) return;
+    await idbPut(STORE_SNAPSHOTS, {
+      at: new Date().toISOString(),
+      reason: opts.reason || 'auto',
+      logCount: Object.keys(data.logs || {}).length,
+      periodCount: (data.periods || []).length,
+      data,
+    });
+    await idbPut(STORE_META, new Date().toISOString(), 'lastSnapshotAt');
+    await pruneSnapshots();
+  } catch (e) {
+    console.warn('Clara: could not write snapshot:', e);
   }
 }
 
+async function pruneSnapshots() {
+  const all = await idbAll(STORE_SNAPSHOTS);
+  storageHealth.snapshotCount = all.length;
+  if (all.length <= MAX_SNAPSHOTS) return;
+  const sorted = all.slice().sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+  for (const old of sorted.slice(0, all.length - MAX_SNAPSHOTS)) {
+    await idbDelete(STORE_SNAPSHOTS, old.id);
+  }
+  storageHealth.snapshotCount = MAX_SNAPSHOTS;
+}
+
+// ─── Loading ───
+function applyLoaded(loaded) {
+  // Deep-merge: only overwrite state keys that exist in saved data
+  // Never let a missing key clobber a default
+  if (loaded.lastPeriodDate !== undefined) state.lastPeriodDate = loaded.lastPeriodDate;
+  if (loaded.cycleLength) state.cycleLength = loaded.cycleLength;
+  if (loaded.periodLength) state.periodLength = loaded.periodLength;
+  if (loaded.importedFrom) state.importedFrom = loaded.importedFrom;
+  if (loaded.importedCount) state.importedCount = loaded.importedCount;
+  if (loaded.updatedAt) state.updatedAt = loaded.updatedAt;
+
+  // Logs: merge so we never lose entries
+  if (loaded.logs && typeof loaded.logs === 'object') {
+    state.logs = { ...loaded.logs };
+  }
+
+  // Periods array (new structure)
+  if (Array.isArray(loaded.periods) && loaded.periods.length > 0) {
+    state.periods = loaded.periods;
+  }
+
+  // Migrate legacy periodStarts flat array → periods[]
+  if (Array.isArray(loaded.periodStarts) && loaded.periodStarts.length > 0 && state.periods.length === 0) {
+    state.periods = loaded.periodStarts.map(s => ({ start: s, end: null }));
+    console.log('Clara: migrated', loaded.periodStarts.length, 'legacy period starts to new format');
+  }
+
+  normalisePeriods();
+}
+
+function normalisePeriods() {
+  // Always keep periodStarts in sync from periods[]
+  state.periodStarts = state.periods.map(p => p.start).sort();
+
+  // If lastPeriodDate not set but we have periods, use most recent
+  if (!state.lastPeriodDate && state.periodStarts.length > 0) {
+    state.lastPeriodDate = state.periodStarts[state.periodStarts.length - 1];
+  }
+}
+
+// Fold another copy of the data into the live state without ever dropping an
+// entry: logs union by date (newest wins), periods union by start date.
+function mergeInto(incoming) {
+  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) return false;
+  let changed = false;
+
+  const incomingLogs = (incoming.logs && typeof incoming.logs === 'object') ? incoming.logs : {};
+  Object.keys(incomingLogs).forEach(date => {
+    const theirs = incomingLogs[date];
+    const mine = state.logs[date];
+    if (!mine) { state.logs[date] = theirs; changed = true; return; }
+    const theirTime = Date.parse((theirs && theirs.savedAt) || '') || 0;
+    const myTime = Date.parse((mine && mine.savedAt) || '') || 0;
+    if (theirTime > myTime) { state.logs[date] = theirs; changed = true; }
+  });
+
+  const incomingPeriods = Array.isArray(incoming.periods) ? incoming.periods
+    : (Array.isArray(incoming.periodStarts) ? incoming.periodStarts.map(s => ({ start: s, end: null })) : []);
+  const byStart = new Map(state.periods.map(p => [p.start, p]));
+  incomingPeriods.forEach(p => {
+    if (!p || !p.start) return;
+    const mine = byStart.get(p.start);
+    if (!mine) { byStart.set(p.start, p); changed = true; }
+    else if (!mine.end && p.end) { mine.end = p.end; changed = true; }
+  });
+  state.periods = [...byStart.values()].sort((a, b) => a.start.localeCompare(b.start));
+
+  const before = state.lastPeriodDate;
+  normalisePeriods();
+  if (state.periodStarts.length) {
+    const latest = state.periodStarts[state.periodStarts.length - 1];
+    if (!state.lastPeriodDate || latest > state.lastPeriodDate) state.lastPeriodDate = latest;
+  }
+  if (state.lastPeriodDate !== before) changed = true;
+
+  return changed;
+}
+
+// Synchronous load from localStorage, so the first paint already has the data.
+// Returns true if anything was found there.
 function loadState() {
   try {
-    const raw = localStorage.getItem('clara_state');
-    if (!raw) { console.log('Clara: no saved state found, starting fresh'); return; }
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) { console.log('Clara: no saved state in localStorage, checking backup stores'); return false; }
 
     let loaded;
     try { loaded = JSON.parse(raw); }
-    catch(e) { console.error('Clara: saved state is corrupt JSON, ignoring:', e); return; }
+    catch(e) { console.error('Clara: saved state is corrupt JSON, will recover from backup stores:', e); return false; }
 
     if (typeof loaded !== 'object' || loaded === null) {
       console.error('Clara: saved state is not an object, ignoring');
-      return;
+      return false;
     }
 
-    // Deep-merge: only overwrite state keys that exist in saved data
-    // Never let a missing key clobber a default
-    if (loaded.lastPeriodDate !== undefined) state.lastPeriodDate = loaded.lastPeriodDate;
-    if (loaded.cycleLength) state.cycleLength = loaded.cycleLength;
-    if (loaded.periodLength) state.periodLength = loaded.periodLength;
-    if (loaded.importedFrom) state.importedFrom = loaded.importedFrom;
-    if (loaded.importedCount) state.importedCount = loaded.importedCount;
-
-    // Logs: merge so we never lose entries
-    if (loaded.logs && typeof loaded.logs === 'object') {
-      state.logs = { ...loaded.logs };
-    }
-
-    // Periods array (new structure)
-    if (Array.isArray(loaded.periods) && loaded.periods.length > 0) {
-      state.periods = loaded.periods;
-    }
-
-    // Migrate legacy periodStarts flat array → periods[]
-    if (Array.isArray(loaded.periodStarts) && loaded.periodStarts.length > 0 && state.periods.length === 0) {
-      state.periods = loaded.periodStarts.map(s => ({ start: s, end: null }));
-      console.log('Clara: migrated', loaded.periodStarts.length, 'legacy period starts to new format');
-    }
-
-    // Always keep periodStarts in sync from periods[]
-    state.periodStarts = state.periods.map(p => p.start).sort();
-
-    // If lastPeriodDate not set but we have periods, use most recent
-    if (!state.lastPeriodDate && state.periodStarts.length > 0) {
-      state.lastPeriodDate = state.periodStarts[state.periodStarts.length - 1];
-    }
+    applyLoaded(loaded);
+    storageHealth.localStorage = 'ok';
 
     const logCount = Object.keys(state.logs).length;
     const periodCount = state.periods.length;
     console.log(`Clara: loaded state: ${logCount} logs, ${periodCount} periods, lastPeriod: ${state.lastPeriodDate}`);
+    return true;
   } catch (e) {
     console.error('Clara: unexpected error loading state:', e);
+    return false;
+  }
+}
+
+// Second pass, after first paint: pull in anything the IndexedDB copy or the
+// snapshots still have, and heal whichever store fell behind.
+async function reconcileStores(foundLocal) {
+  let recovered = false;
+  try {
+    const mirrored = await idbGet(STORE_STATE, 'current');
+    storageHealth.indexedDB = 'ok';
+    if (mirrored) {
+      if (!foundLocal) {
+        // localStorage was empty, corrupt or cleared — restore wholesale
+        applyLoaded(mirrored);
+        recovered = countEntries(mirrored) > 0;
+        if (recovered) console.log('Clara: recovered data from IndexedDB backup');
+      } else if (mergeInto(mirrored)) {
+        recovered = true;
+        console.log('Clara: merged extra entries from IndexedDB backup');
+      }
+    }
+
+    // Last line of defence: if both live stores came back empty but snapshots
+    // exist, restore from the richest snapshot.
+    if (countEntries(state) === 0) {
+      const snaps = await idbAll(STORE_SNAPSHOTS);
+      storageHealth.snapshotCount = snaps.length;
+      if (snaps.length) {
+        const best = snaps.slice().sort((a, b) =>
+          countEntries(b.data) - countEntries(a.data) || (b.at || '').localeCompare(a.at || ''))[0];
+        if (best && countEntries(best.data) > 0) {
+          applyLoaded(best.data);
+          recovered = true;
+          console.log('Clara: recovered data from snapshot taken', best.at);
+        }
+      }
+    } else {
+      const snaps = await idbAll(STORE_SNAPSHOTS).catch(() => []);
+      storageHealth.snapshotCount = snaps.length;
+    }
+  } catch (e) {
+    storageHealth.indexedDB = 'unavailable';
+    console.warn('Clara: backup store unavailable:', e);
+  }
+
+  // Write the reconciled state back everywhere, so all copies agree again.
+  save({ snapshot: recovered, reason: recovered ? 'recovery' : 'startup' });
+  if (recovered) {
+    updateAll();
+    renderStorageInfo();
+    showToast('✓ Restored your entries from Clara\'s backup copy');
+  }
+}
+
+async function restoreSnapshot(id) {
+  try {
+    const snaps = await idbAll(STORE_SNAPSHOTS);
+    const snap = snaps.find(s => String(s.id) === String(id));
+    if (!snap) { showToast('Could not find that version'); return; }
+    if (!confirm(`Restore your data as it was on ${formatSnapshotDate(snap.at)} (${snap.logCount} days logged)? Your current data is saved as a version first, so this can be undone.`)) return;
+    await maybeSnapshot(JSON.parse(JSON.stringify(state)), { snapshot: true, reason: 'before-restore' });
+    applyLoaded(snap.data);
+    save({ snapshot: false });
+    updateAll();
+    renderStorageInfo();
+    renderAllPeriodLists();
+    showToast('✓ Restored version from ' + formatSnapshotDate(snap.at));
+  } catch (e) {
+    showToast('Could not restore: ' + e.message);
+  }
+}
+
+function formatSnapshotDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return iso || 'unknown';
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Auto-backup to a real file on disk (Chrome / Edge on a computer) ───
+let backupHandle = null;
+
+function fileBackupSupported() {
+  return typeof window.showSaveFilePicker === 'function';
+}
+
+async function loadBackupHandle() {
+  if (!fileBackupSupported()) return;
+  try {
+    const handle = await idbGet(STORE_META, 'backupHandle');
+    if (!handle) return;
+    backupHandle = handle;
+    storageHealth.backupFileName = handle.name;
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm === 'granted') await writeBackupFile(false);
+  } catch (e) {
+    console.warn('Clara: could not restore backup file handle:', e);
+  }
+}
+
+async function chooseBackupFile() {
+  if (!fileBackupSupported()) {
+    showToast('Auto-backup to a file needs Chrome or Edge on a computer. Use Export backup instead.');
+    return;
+  }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'clara-backup.json',
+      types: [{ description: 'Clara backup', accept: { 'application/json': ['.json'] } }],
+    });
+    backupHandle = handle;
+    storageHealth.backupFileName = handle.name;
+    await idbPut(STORE_META, handle, 'backupHandle');
+    await writeBackupFile(true);
+    renderStorageInfo();
+    showToast('✓ Auto-backup on — every change is written to ' + handle.name);
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    showToast('Could not set up auto-backup: ' + e.message);
+  }
+}
+
+async function stopFileBackup() {
+  backupHandle = null;
+  storageHealth.backupFileName = null;
+  storageHealth.lastFileBackup = null;
+  try { await idbDelete(STORE_META, 'backupHandle'); } catch (e) { /* nothing to remove */ }
+  renderStorageInfo();
+  showToast('Auto-backup to file turned off');
+}
+
+async function writeBackupFile(interactive) {
+  if (!backupHandle) return;
+  try {
+    let perm = await backupHandle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      // Re-granting needs a click, so only ask when the user is driving.
+      if (!interactive) return;
+      perm = await backupHandle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') return;
+    }
+    const writable = await backupHandle.createWritable();
+    await writable.write(JSON.stringify(state, null, 2));
+    await writable.close();
+    storageHealth.lastFileBackup = new Date().toISOString();
+  } catch (e) {
+    console.warn('Clara: could not write backup file:', e);
   }
 }
 
 function getStorageInfo() {
   try {
-    const raw = localStorage.getItem('clara_state') || '{}';
+    const raw = localStorage.getItem(LS_KEY) || '{}';
     const sizeKB = (new Blob([raw]).size / 1024).toFixed(1);
     const data = JSON.parse(raw);
     const logCount = Object.keys(data.logs || {}).length;
@@ -2287,18 +2686,91 @@ function renderStorageInfo() {
   const el = document.getElementById('storageInfo');
   if (!el) return;
   const info = getStorageInfo();
-  if (!info.ok) {
-    el.innerHTML = '<span style="color:var(--secondary);">⚠️ Could not read storage info.</span>';
-    return;
-  }
+  const logCount = info.ok ? info.logCount : Object.keys(state.logs || {}).length;
+  const periodCount = info.ok ? info.periodCount : (state.periods || []).length;
+  const sizeKB = info.ok ? info.sizeKB : '—';
+
+  const copies = [];
+  copies.push(storageHealth.localStorage === 'failed'
+    ? '<span style="color:var(--secondary);">⚠️ This browser</span>'
+    : '✓ This browser');
+  copies.push(storageHealth.indexedDB === 'ok'
+    ? '✓ Backup copy'
+    : '<span style="color:var(--muted);">— Backup copy</span>');
+  copies.push(storageHealth.snapshotCount > 0
+    ? `✓ ${storageHealth.snapshotCount} saved version${storageHealth.snapshotCount === 1 ? '' : 's'}`
+    : '<span style="color:var(--muted);">— Saved versions</span>');
+  copies.push(storageHealth.backupFileName
+    ? `✓ File: ${storageHealth.backupFileName}`
+    : '<span style="color:var(--muted);">— No file backup</span>');
+
+  const persistLine = storageHealth.persisted === true
+    ? 'Your browser has promised not to delete Clara\'s data automatically.'
+    : storageHealth.persisted === false
+      ? 'Your browser has not guaranteed this data yet — tap "Protect my data" below, and add Clara to your home screen, so it is not cleared automatically.'
+      : 'This browser cannot say whether it will keep the data — export a backup now and then.';
+
+  const lastSave = storageHealth.lastSave
+    ? formatSnapshotDate(storageHealth.lastSave)
+    : (state.updatedAt ? formatSnapshotDate(state.updatedAt) : 'not yet');
+  const lastFile = storageHealth.lastFileBackup ? formatSnapshotDate(storageHealth.lastFileBackup) : null;
+
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:6px;">
-      <div class="stat-row"><span class="stat-label">Days logged</span><span class="stat-val">${info.logCount}</span></div>
-      <div class="stat-row"><span class="stat-label">Periods recorded</span><span class="stat-val">${info.periodCount}</span></div>
-      <div class="stat-row" style="border:none;"><span class="stat-label">Storage used</span><span class="stat-val">${info.sizeKB} KB</span></div>
+      <div class="stat-row"><span class="stat-label">Days logged</span><span class="stat-val">${logCount}</span></div>
+      <div class="stat-row"><span class="stat-label">Periods recorded</span><span class="stat-val">${periodCount}</span></div>
+      <div class="stat-row"><span class="stat-label">Storage used</span><span class="stat-val">${sizeKB} KB</span></div>
+      <div class="stat-row" style="border:none;"><span class="stat-label">Last saved</span><span class="stat-val">${lastSave}</span></div>
     </div>
-    <div style="margin-top:10px;font-size:11px;color:var(--muted);">Data is stored in your browser's localStorage. It persists between sessions but will be lost if you clear your browser data. Use the export button below to back it up.</div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text);line-height:1.9;">
+      <div style="font-weight:600;margin-bottom:2px;">Where your data lives</div>
+      ${copies.map(c => `<div>${c}</div>`).join('')}
+      ${lastFile ? `<div style="color:var(--muted);font-size:11px;margin-top:2px;">File last written ${lastFile}</div>` : ''}
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);">
+      ${persistLine} Everything stays on this device — nothing is uploaded anywhere.
+      Clearing your browser data still erases all of it, so keep an exported backup somewhere safe.
+    </div>
   `;
+  renderSnapshotList();
+}
+
+async function renderSnapshotList() {
+  const el = document.getElementById('snapshotList');
+  if (!el) return;
+  try {
+    const snaps = await idbAll(STORE_SNAPSHOTS);
+    storageHealth.snapshotCount = snaps.length;
+    if (!snaps.length) {
+      el.innerHTML = '<div style="font-size:11px;color:var(--muted);">No earlier versions saved yet. Clara starts keeping them as you log.</div>';
+      return;
+    }
+    const sorted = snaps.slice().sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+    el.innerHTML = sorted.map(s => `
+      <div class="stat-row" style="align-items:center;">
+        <span class="stat-label">${formatSnapshotDate(s.at)} · ${s.logCount} day${s.logCount === 1 ? '' : 's'}</span>
+        <button class="btn-secondary" onclick="restoreSnapshot('${s.id}')" style="font-size:11px;padding:4px 10px;">Restore</button>
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--muted);">Earlier versions are not available in this browser.</div>';
+  }
+}
+
+async function protectMyData() {
+  const granted = await requestPersistentStorage();
+  renderStorageInfo();
+  if (granted === true) showToast('✓ Your browser will keep Clara\'s data');
+  else if (granted === false) showToast('Your browser declined. Add Clara to your home screen and try again.');
+  else showToast('This browser does not support the setting — keep exporting backups.');
+}
+
+async function repairStorage() {
+  showToast('Checking every copy…');
+  await reconcileStores(true);
+  await maybeSnapshot(JSON.parse(JSON.stringify(state)), { snapshot: true, reason: 'manual' });
+  await writeBackupFile(true);
+  renderStorageInfo();
+  showToast('✓ All copies are in sync');
 }
 
 function exportData() {
@@ -2321,17 +2793,24 @@ function importBackup(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = async function(e) {
     try {
       const loaded = JSON.parse(e.target.result);
       // Validate it looks like Clara data
       if (typeof loaded !== 'object' || Array.isArray(loaded)) throw new Error('Invalid backup format');
+      // Keep a version of what's here now, so restoring the wrong file is undoable
+      await maybeSnapshot(JSON.parse(JSON.stringify(state)), { snapshot: true, reason: 'before-import' });
       Object.assign(state, loaded);
       state.logs = state.logs || {};
+      state.periods = Array.isArray(state.periods) ? state.periods : [];
       state.periodStarts = state.periodStarts || [];
       state.cycleLength = state.cycleLength || 28;
       state.periodLength = state.periodLength || 5;
-      save();
+      if (state.periods.length === 0 && state.periodStarts.length > 0) {
+        state.periods = state.periodStarts.map(s => ({ start: s, end: null }));
+      }
+      normalisePeriods();
+      save({ snapshot: true, reason: 'after-import' });
       updateAll();
       renderStorageInfo();
       showToast('✓ Backup restored');
@@ -2346,6 +2825,7 @@ function importBackup(event) {
 // ─── TOAST ───
 function showToast(msg) {
   const t = document.getElementById('toast');
+  if (!t) { console.log('Clara:', msg); return; }
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
@@ -3461,9 +3941,18 @@ function renderHistory() {
 
 // ─── INIT ───
 // Load persisted state before rendering
-loadState();
+const foundLocalState = loadState();
 updateAll();
 initPeriodInputs();
+
+// Then, without blocking the first paint: ask the browser to keep this data,
+// re-attach the on-disk backup file, and reconcile every copy so a store that
+// was cleared or fell behind is healed from the others.
+requestPersistentStorage()
+  .then(() => reconcileStores(foundLocalState))
+  .then(() => loadBackupHandle())
+  .then(() => { if (document.getElementById('page-setup')?.classList.contains('active')) renderStorageInfo(); })
+  .catch(e => console.warn('Clara: storage setup incomplete:', e));
 
 // Auto-save whenever the user leaves the page or hides the tab
 document.addEventListener('visibilitychange', () => {
