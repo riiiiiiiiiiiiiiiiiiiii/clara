@@ -1667,7 +1667,6 @@ function updateToday() {
 
   const p = PHASES[info.phase];
   banner.style.background = p.light;
-  banner.style.borderLeft = `4px solid ${p.color}`;
   document.getElementById('todayPhaseName').style.color = p.color;
   document.getElementById('todayPhaseName').textContent = `${p.name} Phase`;
   document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay} · ${info.daysUntilNext} days until next period`;
@@ -3609,7 +3608,7 @@ function renderAlterEgo(phase) {
     <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
       <div style="flex:1;min-width:200px;">
         <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Your phase alter ego</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:${p.textColor};margin-bottom:6px;">${p.emoji} ${p.alterEgo}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:${p.textColor};margin-bottom:6px;">${p.alterEgo}</div>
         <div style="font-size:13px;line-height:1.7;color:var(--text);margin-bottom:14px;font-style:italic;">"${p.alterEgoDesc}"</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
