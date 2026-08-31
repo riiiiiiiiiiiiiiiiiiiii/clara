@@ -757,23 +757,6 @@ body {
 }
 
 
-/* ─── LOG TABS ─── */
-.log-tab {
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 8px 16px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
-  cursor: pointer;
-  margin-bottom: -1px;
-  transition: all 0.18s;
-  letter-spacing: 0.3px;
-}
-.log-tab:hover { color: var(--secondary); }
-.log-tab.active { color: var(--secondary); border-bottom-color: var(--secondary); font-weight: 500; }
 
 
 /* ═══ MOBILE OPTIMISATIONS ═══ */
@@ -805,21 +788,13 @@ body {
   #streakStatsRow { grid-template-columns: 1fr !important; }
 
   /* Tab bars scroll horizontally instead of wrapping */
-  #page-log > div[style*="border-bottom"],
   #page-calendar > div[style*="border-bottom"] {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     flex-wrap: nowrap;
   }
-  #page-log > div[style*="border-bottom"]::-webkit-scrollbar,
   #page-calendar > div[style*="border-bottom"]::-webkit-scrollbar { display: none; }
-  .log-tab {
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding: 10px 14px;
-    font-size: 14px;
-  }
 
   /* Filter chips: bigger touch targets */
   .history-filter {
@@ -934,7 +909,6 @@ body {
 
     <nav class="nav">
       <div class="nav-item active" onclick="showPage('today')"><span class="nav-icon">◎</span> Today</div>
-      <div class="nav-item" onclick="showPage('log')"><span class="nav-icon">✦</span> Log Day</div>
       <div class="nav-item" onclick="showPage('calendar')"><span class="nav-icon">◈</span> Calendar</div>
       <div class="nav-item" onclick="showPage('insights')"><span class="nav-icon">◉</span> Phase Insights</div>
       <div class="nav-item" onclick="showPage('setup')"><span class="nav-icon">◇</span> My Cycle</div>
@@ -955,64 +929,58 @@ body {
         <div class="page-subtitle" id="todayDate"></div>
       </div>
 
-      <div class="today-banner" id="todayBanner">
-        <div class="today-phase-name" id="todayPhaseName">Set up your cycle</div>
-        <div class="today-day-count" id="todayDayCount">Go to "My Cycle" to get started →</div>
-        <div class="today-tagline" id="todayTagline">Once you enter your last period date, I'll calculate your current phase and surface personalised hormone and mood insights for you every day.</div>
+      <div class="subnav" id="todaySubnav">
+        <button class="subnav-btn active" id="subtab-today" onclick="showTodayTab('today')">Today</button>
+        <button class="subnav-btn" id="subtab-log" onclick="showTodayTab('log')">Log</button>
+        <button class="subnav-btn" id="subtab-history" onclick="showTodayTab('history')">History</button>
       </div>
 
-      <div class="grid-2" style="margin-bottom:20px;">
-        <div class="card">
-          <div class="card-title">Hormones Right Now</div>
-          <div class="card-subtitle" id="hormoneSubtitle">Set up your cycle to see hormone data</div>
-          <div class="hormone-grid" id="hormoneGrid"></div>
-          <div style="margin-top:14px;font-size:12px;">
-            <span onclick="openHormoneDeepDive()" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Read the hormone deep dive &rarr;</span>
+      <div id="todayView">
+
+        <div class="today-banner" id="todayBanner">
+          <div class="today-phase-name" id="todayPhaseName">Set up your cycle</div>
+          <div class="today-day-count" id="todayDayCount">Go to "My Cycle" to get started →</div>
+          <div class="today-tagline" id="todayTagline">Once you enter your last period date, I'll calculate your current phase and surface personalised hormone and mood insights for you every day.</div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card">
+            <div class="card-title">Hormones Right Now</div>
+            <div class="card-subtitle" id="hormoneSubtitle">Set up your cycle to see hormone data</div>
+            <div class="hormone-grid" id="hormoneGrid"></div>
+            <div style="margin-top:14px;font-size:12px;">
+              <span onclick="openHormoneDeepDive()" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Read the hormone deep dive &rarr;</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">What to Expect</div>
+            <div class="card-subtitle">Body, mood & energy today</div>
+            <div id="expectList" style="font-size:13px;line-height:1.9;color:#1e2820;"></div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title">What to Expect</div>
-          <div class="card-subtitle">Body, mood & energy today</div>
-          <div id="expectList" style="font-size:13px;line-height:1.9;color:#1e2820;"></div>
+
+        <!-- Alter Ego Card -->
+        <div class="card" id="alterEgoCard" style="display:none;position:relative;overflow:hidden;">
+          <div id="alterEgoContent"></div>
         </div>
-      </div>
 
-      <!-- Alter Ego Card -->
-      <div class="card" id="alterEgoCard" style="display:none;position:relative;overflow:hidden;">
-        <div id="alterEgoContent"></div>
-      </div>
-
-      <!-- Prediction Card -->
-      <div class="card" id="predictionCard" style="display:none;">
-        <div id="predictionContent"></div>
-      </div>
-
-      <!-- Streak & Stats row -->
-      <div class="grid-2" id="streakStatsRow" style="display:none;">
-        <div class="card" id="streakCard">
-          <div id="streakContent"></div>
+        <!-- Prediction Card -->
+        <div class="card" id="predictionCard" style="display:none;">
+          <div id="predictionContent"></div>
         </div>
-        <div class="card" id="funStatsCard">
-          <div id="funStatsContent"></div>
+
+        <!-- Streak & Stats row -->
+        <div class="grid-2" id="streakStatsRow" style="display:none;">
+          <div class="card" id="streakCard">
+            <div id="streakContent"></div>
+          </div>
+          <div class="card" id="funStatsCard">
+            <div id="funStatsContent"></div>
+          </div>
         </div>
-      </div>
-    </div>
+      </div><!-- end todayView -->
 
-    <!-- LOG PAGE -->
-    <div class="page" id="page-log">
-      <div class="page-header">
-        <div class="page-title">Log <em>Today</em></div>
-        <div class="page-subtitle">Track your mood, energy & symptoms</div>
-      </div>
-
-      <!-- Tab bar -->
-      <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0;">
-        <button class="log-tab active" id="logTab-entry" onclick="switchLogTab('entry')">Today's Entry</button>
-        <button class="log-tab" id="logTab-history" onclick="switchLogTab('history')">History</button>
-      </div>
-
-      <!-- Entry tab -->
-      <div id="logPanel-entry">
+      <div id="logPanel-entry" style="display:none;">
       <div class="card" style="max-width:600px;">
         <div class="log-date-display" id="logDateDisplay"></div>
         <div class="card-subtitle" id="logPhaseDisplay"></div>
@@ -1128,7 +1096,9 @@ body {
 
       </div><!-- end logPanel-history -->
 
-    </div><!-- end page-log -->
+    </div><!-- end page-today -->
+
+    <!-- LOG PAGE -->
 
     <!-- CALENDAR PAGE -->
     <div class="page" id="page-calendar">
@@ -1924,7 +1894,7 @@ function addPeriodEntry(startInputId, endInputId) {
   showToast('🩸 Period saved');
 }
 
-// Legacy compat for Log Day toggle button
+// Legacy compat for the period toggle button on the Log tab
 function addPeriodStartFrom(startId, endId) {
   addPeriodEntry(startId, endId || startId.replace('Start','End').replace('Input','EndInput'));
 }
@@ -2277,11 +2247,10 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   const navItems = document.querySelectorAll('.nav-item');
-  const pages = ['today','log','calendar','insights','setup'];
+  const pages = ['today','calendar','insights','setup'];
   navItems[pages.indexOf(name)]?.classList.add('active');
 
   if (name === 'calendar') renderCalendar();
-  if (name === 'log') updateLogPage();
   if (name === 'insights') showInsight(getCurrentCycleInfo()?.phase || currentInsight);
   if (name === 'setup') { loadSetupValues(); renderStorageInfo(); renderAllPeriodLists(); }
 }
@@ -3862,12 +3831,26 @@ function renderFunStats() {
 
 
 
-function switchLogTab(tab) {
-  document.getElementById('logPanel-entry').style.display = tab === 'entry' ? 'block' : 'none';
-  document.getElementById('logPanel-history').style.display = tab === 'history' ? 'block' : 'none';
-  document.querySelectorAll('.log-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('logTab-' + tab)?.classList.add('active');
-  if (tab === 'history') renderHistory();
+// Today, Log and History are three views of the same day behind one switch.
+// Logging used to be its own nav item with a second row of tabs inside it.
+let todayTab = 'today';
+
+function showTodayTab(tab) {
+  const tabs = ['today', 'log', 'history'];
+  todayTab = tabs.includes(tab) ? tab : 'today';
+
+  document.getElementById('todayView').style.display = todayTab === 'today' ? '' : 'none';
+  document.getElementById('logPanel-entry').style.display = todayTab === 'log' ? 'block' : 'none';
+  document.getElementById('logPanel-history').style.display = todayTab === 'history' ? 'block' : 'none';
+
+  tabs.forEach(t => document.getElementById('subtab-' + t)?.classList.toggle('active', t === todayTab));
+
+  if (todayTab === 'log') updateLogPage();
+  if (todayTab === 'history') renderHistory();
+
+  // Land at the top of the view just opened
+  document.querySelector('.main')?.scrollTo({ top: 0 });
+  window.scrollTo({ top: 0 });
 }
 
 // ─── HISTORY PAGE ───
@@ -3897,7 +3880,7 @@ function renderHistory() {
       <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
         <div style="font-size:32px;margin-bottom:12px;">📓</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:8px;color:var(--secondary);">No entries yet</div>
-        <div style="font-size:13px;">Head to Log Day to start tracking your mood, energy and symptoms.</div>
+        <div style="font-size:13px;">Open the <span onclick="showTodayTab('log')" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Log</span> tab to start tracking your mood, energy and symptoms.</div>
       </div>`;
     document.getElementById('moodTrendStrip').innerHTML = '';
     document.getElementById('symptomSummary').innerHTML = '<div style="font-size:13px;color:var(--muted);">Log some days first to see your symptom patterns.</div>';
@@ -4057,6 +4040,7 @@ window.addEventListener('beforeunload', () => { save(); });
 window.addEventListener('pagehide', () => { save(); });
 // showInsight also fills in the hormone deep dive below it
 showInsight(getCurrentCycleInfo()?.phase || 'menstrual');
+showTodayTab('today');
 </script>
 
 <div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--secondary);color:var(--main);padding:16px 20px;z-index:200;display:none;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 -4px 20px rgba(0,0,0,0.15);">
