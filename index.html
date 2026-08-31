@@ -916,7 +916,7 @@ body {
     <nav class="nav">
       <div class="nav-item active" onclick="showPage('today')"><span class="nav-icon">◎</span> Today</div>
       <div class="nav-item" onclick="showPage('calendar')"><span class="nav-icon">◈</span> Calendar</div>
-      <div class="nav-item" onclick="showPage('insights')"><span class="nav-icon">◉</span> Phase Insights</div>
+      <div class="nav-item" onclick="showPage('insights')"><span class="nav-icon">◉</span> Insights</div>
       <div class="nav-item" onclick="showPage('setup')"><span class="nav-icon">◇</span> My Cycle</div>
     </nav>
 
@@ -932,7 +932,6 @@ body {
     <div class="page active" id="page-today">
       <div class="page-header">
         <div class="page-title" id="todayGreeting">Good morning</div>
-        <div class="page-subtitle" id="todayDate"></div>
       </div>
 
       <div class="subnav" id="todaySubnav">
@@ -1028,6 +1027,17 @@ body {
             <button class="symptom-chip" onclick="toggleSymptom(this)">Motivation spike</button>
             <button class="symptom-chip" onclick="toggleSymptom(this)">Vivid dreams</button>
           </div>
+        </div>
+
+        <div class="form-section" id="painSection" style="display:none;">
+          <label class="form-label">How bad were the cramps?</label>
+          <div class="slider-wrap">
+            <span style="font-size:12px;color:var(--muted);">Mild</span>
+            <input type="range" id="painSlider" min="1" max="10" value="5" oninput="document.getElementById('painVal').textContent=this.value">
+            <span style="font-size:12px;color:var(--muted);">Severe</span>
+            <span class="slider-val" id="painVal">5</span>
+          </div>
+          <div class="setup-hint" id="painHint">1 is barely there, 10 is the worst you have had</div>
         </div>
 
         <div class="form-section">
@@ -1191,14 +1201,14 @@ body {
 
     <!-- INSIGHTS PAGE -->
     <div class="page" id="page-insights">
-      <div class="page-header">
-        <div class="page-title">Phase <em>Insights</em></div>
-        <div class="page-subtitle">Everything about each phase, and the hormones behind it: mood, body &amp; performance</div>
-      </div>
-
-      <div class="subnav" id="insightsSubnav">
+      <div class="subnav" id="insightsSubnav" style="margin-bottom:18px;">
         <button class="subnav-btn active" id="subtab-phases" onclick="showInsightsTab('phases')">Phases</button>
         <button class="subnav-btn" id="subtab-hormones" onclick="showInsightsTab('hormones')">Hormones</button>
+      </div>
+
+      <div class="page-header">
+        <div class="page-title" id="insightsTitle">Your <em>Insights</em></div>
+        <div class="page-subtitle" id="insightsSubtitle">Everything about each phase: mood, body &amp; performance</div>
       </div>
 
       <div id="insightsPhaseView">
@@ -1213,7 +1223,7 @@ body {
       </div>
 
       <div id="insightsHormoneView" style="display:none;">
-        <div class="page-subtitle" id="hormoneViewSubtitle" style="margin-bottom:24px;">The 6 hormones driving your cycle: what they are, what they do, and how they shift.</div>
+        <div id="hormoneViewSubtitle" style="font-size:12px;color:var(--muted);margin-bottom:20px;"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;" id="hormoneTabBar">
           <button class="hormone-tab-btn active" onclick="showHormoneCard('oestrogen')">Oestrogen</button>
           <button class="hormone-tab-btn" onclick="showHormoneCard('progesterone')">Progesterone</button>
@@ -1649,7 +1659,6 @@ function updateToday() {
   const hour = now.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   document.getElementById('todayGreeting').textContent = greeting;
-  document.getElementById('todayDate').textContent = formatDate(now);
 
   const info = getCurrentCycleInfo();
   const banner = document.getElementById('todayBanner');
@@ -1667,7 +1676,7 @@ function updateToday() {
   banner.style.background = p.light;
   banner.style.borderLeft = `4px solid ${p.color}`;
   document.getElementById('todayPhaseName').style.color = p.color;
-  document.getElementById('todayPhaseName').textContent = `${p.emoji} ${p.name} Phase`;
+  document.getElementById('todayPhaseName').textContent = `${p.name} Phase`;
   document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay} · ${info.daysUntilNext} days until next period`;
   document.getElementById('todayTagline').textContent = p.tagline;
 
@@ -1725,6 +1734,11 @@ function updateLogPage() {
   document.getElementById('energySlider').value = energy;
   document.getElementById('energyVal').textContent = energy;
 
+  const pain = existing.pain || 5;
+  document.getElementById('painSlider').value = pain;
+  document.getElementById('painVal').textContent = pain;
+  updatePainSection();
+
   document.getElementById('logNotes').value = existing.notes || '';
 }
 
@@ -1742,6 +1756,14 @@ function toggleSymptom(btn) {
   } else {
     selectedSymptoms = selectedSymptoms.filter(x => x !== s);
   }
+  updatePainSection();
+}
+
+// Cramps get a follow-up question; nothing else does.
+function updatePainSection() {
+  const section = document.getElementById('painSection');
+  if (!section) return;
+  section.style.display = selectedSymptoms.includes('Cramps') ? 'block' : 'none';
 }
 
 function saveLog() {
@@ -1753,6 +1775,9 @@ function saveLog() {
     mood: selectedMood || existing.mood || null,
     energy: parseInt(document.getElementById('energySlider').value) || existing.energy || 5,
     symptoms: [...selectedSymptoms],
+    pain: document.getElementById('painSection').style.display !== 'none'
+      ? parseInt(document.getElementById('painSlider').value) || null
+      : null,
     notes: document.getElementById('logNotes').value !== '' 
       ? document.getElementById('logNotes').value 
       : (existing.notes || ''),
@@ -2025,9 +2050,9 @@ function renderUpcoming() {
 
   // Next period
   events.push({ days: info.daysUntilNext, label: '🩸 Next period starts', color: 'var(--menstrual)' });
-  // Ovulation
-  if (info.daysToOv > 0) events.push({ days: info.daysToOv, label: '✨ Ovulation window', color: 'var(--ovulatory)' });
-  else if (info.daysToOv <= 0) {
+  // Ovulation only shows once: the "ovulatory phase begins" transition below
+  // lands on the same day, so listing a window here just said it twice.
+  if (info.daysToOv <= 0) {
     const nextOvDays = info.cycleLength - info.cycleDay + info.ovDay;
     events.push({ days: nextOvDays, label: '✨ Next ovulation', color: 'var(--ovulatory)' });
   }
@@ -2071,7 +2096,7 @@ function changeMonth(dir) {
 }
 
 // ─── INSIGHTS ───
-// Phase Insights holds two views behind a segmented switch: the phase write-up
+// Insights holds two views behind a segmented switch: the phase write-up
 // and the hormone deep dive. They used to be stacked, which meant scrolling the
 // whole phase page to reach the hormones.
 let insightsTab = 'phases';
@@ -2087,6 +2112,16 @@ function showInsightsTab(tab) {
 
   document.getElementById('subtab-phases')?.classList.toggle('active', !onHormones);
   document.getElementById('subtab-hormones')?.classList.toggle('active', onHormones);
+
+  // The heading names whichever view is open
+  const title = document.getElementById('insightsTitle');
+  const sub = document.getElementById('insightsSubtitle');
+  if (title) title.innerHTML = onHormones ? 'Hormones <em>Deep Dive</em>' : 'Your <em>Insights</em>';
+  if (sub) {
+    sub.textContent = onHormones
+      ? 'The 6 hormones driving your cycle: what they are, what they do, and how they shift'
+      : 'Everything about each phase: mood, body & performance';
+  }
 
   // Land at the top of the view just opened, not wherever the other one was left
   document.querySelector('.main')?.scrollTo({ top: 0 });
@@ -2155,7 +2190,7 @@ function showInsight(phase) {
   showHormoneCard(dominantHormoneForPhase(phase));
   const sub = document.getElementById('hormoneViewSubtitle');
   if (sub) {
-    sub.innerHTML = `The 6 hormones driving your cycle. Showing the one that leads your <strong style="color:${p.color};">${p.name.toLowerCase()}</strong> phase first &mdash; switch phase under Phases to change it.`;
+    sub.innerHTML = `Showing the hormone that leads your <strong style="color:${p.color};">${p.name.toLowerCase()}</strong> phase &mdash; change phase under Phases.`;
   }
 }
 
