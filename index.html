@@ -903,7 +903,6 @@ body {
       <div class="nav-item" onclick="showPage('calendar')"><span class="nav-icon">◈</span> Calendar</div>
       <div class="nav-item" onclick="showPage('insights')"><span class="nav-icon">◉</span> Phase Insights</div>
       <div class="nav-item" onclick="showPage('setup')"><span class="nav-icon">◇</span> My Cycle</div>
-      <div class="nav-item" onclick="showPage('flo')"><span class="nav-icon">⬆</span> Import from Flo</div>
     </nav>
 
     <div class="sidebar-footer">
@@ -1136,6 +1135,72 @@ body {
 
 
 
+
+      <div id="floImport" style="margin-top:40px;border-top:1px solid var(--border);padding-top:32px;">
+        <div class="page-header" style="margin-bottom:20px;">
+          <div class="page-title" style="font-size:32px;">Import from <em>Flo</em></div>
+          <div class="page-subtitle">Bring your Flo history into Clara and the calendar above fills in</div>
+        </div>
+      <div style="max-width:620px;">
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">How to export your Flo data</div>
+          <div class="card-subtitle">Flo lets you download your full history as a CSV file</div>
+          <div style="display:flex;flex-direction:column;gap:18px;margin-top:4px;">
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">1</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Open the <strong>Flo app</strong> on your phone &rarr; tap your <strong>Profile</strong> icon (bottom right)</div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">2</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Go to <strong>Settings &rarr; Privacy &amp; Security &rarr; Export data</strong></div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">3</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Tap <strong>"Export data"</strong> &mdash; Flo will prepare your data and email you a <code style="background:var(--border);padding:2px 6px;border-radius:4px;font-size:12px;">.json</code> file. This can take a few minutes to a few hours. Download the file from your email.</div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">4</div>
+              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Upload it below &darr;</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">Upload your Flo CSV</div>
+          <div class="card-subtitle">Your data never leaves your browser &mdash; everything is processed locally</div>
+          <div id="floDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;"
+               onclick="document.getElementById('floFileInput').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+               ondragleave="this.style.borderColor='var(--border)'"
+               ondrop="handleFloDrop(event)">
+            <div style="font-size:32px;margin-bottom:10px;">&#128193;</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--accent);margin-bottom:6px;">Drop your CSV here</div>
+            <div style="font-size:12px;color:var(--muted);">or click to browse &middot; accepts .json (Flo official) or .csv</div>
+          </div>
+          <input type="file" id="floFileInput" accept=".json,.csv" style="display:none;" onchange="handleFloFile(event)">
+          <div id="floStatus" style="display:none;padding:16px;border-radius:10px;font-size:13px;line-height:1.7;"></div>
+          <div id="floPreview" style="display:none;">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--accent);margin-bottom:12px;">Found in your data</div>
+            <div id="floPreviewContent"></div>
+            <div style="margin-top:20px;display:flex;gap:12px;">
+              <button class="btn-primary" onclick="confirmFloImport()">Import this data</button>
+              <button class="btn-secondary" onclick="cancelFloImport()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background:var(--luteal-light);border-color:var(--luteal-mid);">
+          <div class="card-title" style="color:var(--luteal);">Can't export from Flo?</div>
+          <div style="font-size:13px;color:#1e2820;line-height:1.7;margin-bottom:16px;">
+            No problem &mdash; go to <strong>My Cycle</strong> and enter your last period start date manually. Clara will calculate everything from there.
+          </div>
+          <button class="btn-secondary" onclick="showPage('setup')">Go to My Cycle &rarr;</button>
+        </div>
+
+      </div>
+      </div>
+
     </div><!-- end page-calendar -->
 
     <!-- INSIGHTS PAGE -->
@@ -1355,74 +1420,8 @@ body {
 
 
     <!-- FLO IMPORT PAGE -->
-    <div class="page" id="page-flo">
-      <div class="page-header">
-        <div class="page-title">Import from <em>Flo</em></div>
-        <div class="page-subtitle">Bring your Flo data into Clara in a few steps</div>
-      </div>
-
-      <div style="max-width:620px;">
-
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-title">How to export your Flo data</div>
-          <div class="card-subtitle">Flo lets you download your full history as a CSV file</div>
-          <div style="display:flex;flex-direction:column;gap:18px;margin-top:4px;">
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">1</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Open the <strong>Flo app</strong> on your phone &rarr; tap your <strong>Profile</strong> icon (bottom right)</div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">2</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Go to <strong>Settings &rarr; Privacy &amp; Security &rarr; Export data</strong></div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fce8f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">3</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Tap <strong>"Export data"</strong> &mdash; Flo will prepare your data and email you a <code style="background:var(--border);padding:2px 6px;border-radius:4px;font-size:12px;">.json</code> file. This can take a few minutes to a few hours. Download the file from your email.</div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="min-width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;">4</div>
-              <div style="font-size:13px;line-height:1.7;color:#1e2820;">Upload it below &darr;</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px;">
-          <div class="card-title">Upload your Flo CSV</div>
-          <div class="card-subtitle">Your data never leaves your browser &mdash; everything is processed locally</div>
-          <div id="floDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;"
-               onclick="document.getElementById('floFileInput').click()"
-               ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
-               ondragleave="this.style.borderColor='var(--border)'"
-               ondrop="handleFloDrop(event)">
-            <div style="font-size:32px;margin-bottom:10px;">&#128193;</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--accent);margin-bottom:6px;">Drop your CSV here</div>
-            <div style="font-size:12px;color:var(--muted);">or click to browse &middot; accepts .json (Flo official) or .csv</div>
-          </div>
-          <input type="file" id="floFileInput" accept=".json,.csv" style="display:none;" onchange="handleFloFile(event)">
-          <div id="floStatus" style="display:none;padding:16px;border-radius:10px;font-size:13px;line-height:1.7;"></div>
-          <div id="floPreview" style="display:none;">
-            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--accent);margin-bottom:12px;">Found in your data</div>
-            <div id="floPreviewContent"></div>
-            <div style="margin-top:20px;display:flex;gap:12px;">
-              <button class="btn-primary" onclick="confirmFloImport()">Import this data</button>
-              <button class="btn-secondary" onclick="cancelFloImport()">Cancel</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" style="background:var(--luteal-light);border-color:var(--luteal-mid);">
-          <div class="card-title" style="color:var(--luteal);">Can't export from Flo?</div>
-          <div style="font-size:13px;color:#1e2820;line-height:1.7;margin-bottom:16px;">
-            No problem &mdash; go to <strong>My Cycle</strong> and enter your last period start date manually. Clara will calculate everything from there.
-          </div>
-          <button class="btn-secondary" onclick="showPage('setup')">Go to My Cycle &rarr;</button>
-        </div>
-
-      </div>
-    </div>
 
 
-    <!-- HORMONES DEEP DIVE PAGE -->
 
   </main>
 </div>
@@ -2207,7 +2206,7 @@ function showPage(name) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   const navItems = document.querySelectorAll('.nav-item');
-  const pages = ['today','log','calendar','insights','setup','flo'];
+  const pages = ['today','log','calendar','insights','setup'];
   navItems[pages.indexOf(name)]?.classList.add('active');
 
   if (name === 'calendar') renderCalendar();
@@ -3294,6 +3293,9 @@ function showFloPreview(data) {
 
 function confirmFloImport() {
   if (!pendingFloData) return;
+  // An import rewrites the whole period history, so keep a version of what's
+  // here now: the same safety net as restoring a backup file.
+  maybeSnapshot(JSON.parse(JSON.stringify(state)), { snapshot: true, reason: 'before-flo-import' });
   state.lastPeriodDate = pendingFloData.mostRecentPeriod;
   state.cycleLength = pendingFloData.avgCycleLength;
   state.periodLength = pendingFloData.periodLength || state.periodLength || 5;
@@ -3305,12 +3307,17 @@ function confirmFloImport() {
   state.periods = pendingFloData.allPeriodStarts.map(s => existingByStart[s] || { start: s, end: null });
   state.importedFrom = 'flo';
   state.importedCount = pendingFloData.totalPeriods;
-  save();
+  save({ snapshot: true, reason: 'flo-import' });
   updateAll();
+  renderCalendar();
   document.getElementById('floPreview').style.display = 'none';
   showFloStatus('success', `✓ ${pendingFloData.totalPeriods} periods imported from ${pendingFloData.yearRange}. Clara is now fully set up with your complete history.`);
   pendingFloData = null;
-  setTimeout(() => showPage('today'), 2200);
+  // The calendar is right above the importer now, so show the filled-in months
+  // rather than jumping the user to another page.
+  setTimeout(() => {
+    document.getElementById('calGrid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 1600);
 }
 
 function cancelFloImport() {
