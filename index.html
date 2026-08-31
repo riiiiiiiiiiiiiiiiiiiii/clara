@@ -791,7 +791,7 @@ body {
     gap: 16px !important;
   }
 
-  /* Streak + stats row stacks */
+  /* Fun stats row */
 
   /* Tab bars scroll horizontally instead of wrapping */
   #page-calendar > div[style*="border-bottom"] {
@@ -975,8 +975,8 @@ body {
           <div id="predictionContent"></div>
         </div>
 
-        <!-- Streak & Stats row -->
-        <div id="streakStatsRow" style="display:none;">
+        <!-- Fun stats -->
+        <div id="funStatsRow" style="display:none;">
           <div class="card" id="funStatsCard">
             <div id="funStatsContent"></div>
           </div>
@@ -1654,8 +1654,8 @@ function updateToday() {
   const info = getCurrentCycleInfo();
   const banner = document.getElementById('todayBanner');
 
-  // Streak, achievements & patterns: these run off logs, not cycle setup
-  document.getElementById('streakStatsRow').style.display = 'block';
+  // Achievements & patterns: these run off logs, not cycle setup
+  document.getElementById('funStatsRow').style.display = 'block';
   renderFunStats();
 
   if (!info) {
@@ -3567,9 +3567,6 @@ function showHormoneCard(key) {
 
 const ACHIEVEMENTS = [
   { id: 'first_log',    icon: '🌱', name: 'First Entry',      desc: 'You started. That\'s everything.',           check: (s) => Object.keys(s.logs).length >= 1 },
-  { id: 'streak_3',     icon: '🔥', name: '3-Day Streak',     desc: 'Three days in a row. You\'re in the habit.', check: (s) => getCurrentStreak(s) >= 3 },
-  { id: 'streak_7',     icon: '⚡', name: 'Week Warrior',      desc: 'Seven consecutive days logged.',             check: (s) => getCurrentStreak(s) >= 7 },
-  { id: 'streak_28',    icon: '🏆', name: 'Full Cycle',        desc: 'A whole cycle logged. Legendary.',           check: (s) => getLongestStreak(s) >= 28 },
   { id: 'moods_5',      icon: '🎭', name: 'Full Spectrum',     desc: 'Logged all 5 mood types.',                   check: (s) => new Set(Object.values(s.logs).map(l=>l.mood).filter(Boolean)).size >= 5 },
   { id: 'notes_10',     icon: '📓', name: 'Dear Diary',        desc: '10 entries with notes.',                     check: (s) => Object.values(s.logs).filter(l=>l.notes?.trim()).length >= 10 },
   { id: 'symptoms_all', icon: '🔬', name: 'Body Detective',    desc: 'Logged 10 different symptoms.',              check: (s) => new Set(Object.values(s.logs).flatMap(l=>l.symptoms||[])).size >= 10 },
@@ -3577,31 +3574,7 @@ const ACHIEVEMENTS = [
   { id: 'periods_12',   icon: '💫', name: 'Year in Review',    desc: 'A full year of period history.',             check: (s) => (s.periods||[]).length >= 12 },
 ];
 
-function getCurrentStreak(s) {
-  const logs = s.logs || {};
-  const todayD = today();
-  let streak = 0;
-  let d = new Date();
-  while (true) {
-    const ds = d.toISOString().slice(0,10);
-    if (logs[ds]) { streak++; d.setDate(d.getDate()-1); }
-    else if (ds === todayD) { d.setDate(d.getDate()-1); } // skip today if not logged yet
-    else break;
-  }
-  return streak;
-}
 
-function getLongestStreak(s) {
-  const dates = Object.keys(s.logs || {}).sort();
-  if (!dates.length) return 0;
-  let best = 1, cur = 1;
-  for (let i = 1; i < dates.length; i++) {
-    const gap = (new Date(dates[i]) - new Date(dates[i-1])) / 86400000;
-    if (gap === 1) { cur++; best = Math.max(best, cur); }
-    else cur = 1;
-  }
-  return best;
-}
 
 function getEarnedAchievements() {
   return ACHIEVEMENTS.filter(a => { try { return a.check(state); } catch(e) { return false; } });
