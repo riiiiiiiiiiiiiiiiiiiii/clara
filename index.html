@@ -1578,6 +1578,29 @@ function getPhaseForDay(cycleDay, cycleLength, periodLength) {
   return 'luteal';
 }
 
+// How a cycle day should be qualified: late, projected, or neither.
+function cycleDaySuffix(info) {
+  if (!info) return '';
+  if (info.isOverdue) {
+    const d = info.overdueBy;
+    return ` · period ${d} day${d === 1 ? '' : 's'} late`;
+  }
+  if (info.isPredicted) return ' · predicted';
+  return '';
+}
+
+// A date is recorded, not calculated, when a period start was logged on it or
+// it falls inside a period whose end date was entered.
+function isLoggedPeriodDay(dateStr) {
+  if (state.periodStarts && state.periodStarts.includes(dateStr)) return true;
+  if (state.periods) {
+    for (const per of state.periods) {
+      if (per.end && dateStr >= per.start && dateStr <= per.end) return true;
+    }
+  }
+  return false;
+}
+
 function getCurrentCycleInfo() {
   const todayStr = today();
 
@@ -1592,16 +1615,28 @@ function getCurrentCycleInfo() {
 
   const start = parseDate(cycleStart);
   const now = parseDate(todayStr);
-  let cycleDay = daysBetween(start, now) + 1;
   const cycleLength = state.cycleLength;
   const periodLength = state.periodLength;
 
-  // Nothing logged for a while: project forward on the average cycle length
-  while (cycleDay > cycleLength) cycleDay -= cycleLength;
-  if (cycleDay < 1) cycleDay = 1;
+  const rawDay = daysBetween(start, now) + 1;
+  let cycleDay = rawDay < 1 ? 1 : rawDay;
 
-  const phase = getPhaseForDay(cycleDay, cycleLength, periodLength);
-  const daysUntilNext = cycleLength - cycleDay + 1;
+  // Running past the expected length means the next period is late, not that a
+  // new one quietly began. Wrapping back to day 1 here used to make Clara state
+  // someone was bleeding on the strength of a month-old date, so report the
+  // real day and how late it is instead.
+  const isOverdue = cycleDay > cycleLength;
+  const overdueBy = isOverdue ? cycleDay - cycleLength : 0;
+
+  // Luteal is the honest phase while a period is late: past ovulation, not yet
+  // bleeding. getPhaseForDay would read the wrapped day as menstrual.
+  const phase = isOverdue ? 'luteal' : getPhaseForDay(cycleDay, cycleLength, periodLength);
+
+  // Today's phase is only recorded when a logged period actually covers today.
+  // Anything else is Clara projecting from the cycle start, and says so.
+  const isPredicted = isOverdue || (phase === 'menstrual' && !isLoggedPeriodDay(todayStr));
+
+  const daysUntilNext = isOverdue ? 0 : cycleLength - cycleDay + 1;
 
   // Next period date
   const nextPeriod = new Date(now);
@@ -1611,7 +1646,8 @@ function getCurrentCycleInfo() {
   const ovDay = getOvulationDay(cycleLength, periodLength);
   const daysToOv = ovDay - cycleDay;
 
-  return { cycleDay, cycleLength, periodLength, phase, daysUntilNext, nextPeriod, ovDay, daysToOv, cycleStart };
+  return { cycleDay, cycleLength, periodLength, phase, daysUntilNext, nextPeriod, ovDay, daysToOv, cycleStart,
+           isOverdue, overdueBy, isPredicted };
 }
 
 // ─── SIDEBAR ───
@@ -1630,10 +1666,13 @@ function updateSidebar() {
   }
 
   const p = PHASES[info.phase];
-  orb.style.background = `conic-gradient(#E8C84A ${(info.cycleDay/info.cycleLength)*360}deg, rgba(255,255,255,0.08) 0deg)`;
+  const ringPct = Math.min(info.cycleDay / info.cycleLength, 1);
+  orb.style.background = `conic-gradient(#E8C84A ${ringPct * 360}deg, rgba(255,255,255,0.08) 0deg)`;
   orb.innerHTML = `<div style="width:86px;height:86px;border-radius:50%;background:#1C3A35;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">${p.emoji || `<span style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--main);opacity:0.85;">${info.cycleDay}</span>`}</div>`;
   phaseName.textContent = p.name;
-  dayCount.textContent = `Cycle Day ${info.cycleDay} of ${info.cycleLength}`;
+  dayCount.textContent = info.isOverdue
+    ? `Day ${info.cycleDay}${cycleDaySuffix(info)}`
+    : `Cycle Day ${info.cycleDay} of ${info.cycleLength}${cycleDaySuffix(info)}`;
 }
 
 // ─── TODAY PAGE ───
@@ -1657,7 +1696,7 @@ function updateToday() {
   banner.style.background = p.light;
   document.getElementById('todayPhaseName').style.color = p.color;
   document.getElementById('todayPhaseName').textContent = `${p.name} Phase`;
-  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay}`;
+  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay}${cycleDaySuffix(info)}`;
   document.getElementById('todayTagline').textContent = p.tagline;
 
   // Hormones. Levels and labels come from HORMONE_DATA, the same table the
@@ -1693,7 +1732,7 @@ let selectedSymptoms = [];
 function updateLogPage() {
   document.getElementById('logDateDisplay').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
   const info = getCurrentCycleInfo();
-  document.getElementById('logPhaseDisplay').textContent = info ? `${PHASES[info.phase].emoji ? PHASES[info.phase].emoji + ' ' : ''}${PHASES[info.phase].name} Phase · Day ${info.cycleDay}` : 'Set up your cycle to see phase';
+  document.getElementById('logPhaseDisplay').textContent = info ? `${PHASES[info.phase].emoji ? PHASES[info.phase].emoji + ' ' : ''}${PHASES[info.phase].name} Phase · Day ${info.cycleDay}${cycleDaySuffix(info)}` : 'Set up your cycle to see phase';
 
   // Rebuild the form from today's stored log, so nothing carries over
   // from the last day logged in this session
@@ -1993,13 +2032,7 @@ function renderCalendar() {
     // ── Mark days a period was actually logged on: the start, plus the whole
     //    range whenever an end date was entered. These are recorded rather than
     //    calculated, so they never render as predicted.
-    let loggedPeriod = !!(state.periodStarts && state.periodStarts.includes(dateStr));
-    if (!loggedPeriod && state.periods) {
-      for (const p of state.periods) {
-        if (p.end && dateStr >= p.start && dateStr <= p.end) { loggedPeriod = true; break; }
-      }
-    }
-    if (loggedPeriod) {
+    if (isLoggedPeriodDay(dateStr)) {
       cls = cls.replace(' predicted', '');
       cls += ' period-day';
     }
