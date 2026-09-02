@@ -993,7 +993,7 @@ body {
             <button class="mood-btn" data-mood="good" onclick="selectMood(this)">🌸<span>Good</span></button>
             <button class="mood-btn" data-mood="neutral" onclick="selectMood(this)">🌿<span>Neutral</span></button>
             <button class="mood-btn" data-mood="low" onclick="selectMood(this)">🌧<span>Low</span></button>
-            <button class="mood-btn" data-mood="difficult" onclick="selectMood(this)">🌑<span>Difficult</span></button>
+            <button class="mood-btn" data-mood="difficult" onclick="selectMood(this)">🌑<span>Rough</span></button>
           </div>
         </div>
 
@@ -1081,12 +1081,12 @@ body {
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;">
           <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Filter</span>
           <button class="history-filter active" data-filter="all" onclick="setHistoryFilter('all',this)">All</button>
-          <button class="history-filter" data-filter="radiant" onclick="setHistoryFilter('radiant',this)">😄 Radiant</button>
-          <button class="history-filter" data-filter="good" onclick="setHistoryFilter('good',this)">🙂 Good</button>
-          <button class="history-filter" data-filter="neutral" onclick="setHistoryFilter('neutral',this)">😐 Neutral</button>
-          <button class="history-filter" data-filter="low" onclick="setHistoryFilter('low',this)">😔 Low</button>
-          <button class="history-filter" data-filter="difficult" onclick="setHistoryFilter('difficult',this)">😞 Difficult</button>
-          <button class="history-filter" data-filter="has-notes" onclick="setHistoryFilter('has-notes',this)">📝 Has notes</button>
+          <button class="history-filter" data-filter="radiant" onclick="setHistoryFilter('radiant',this)">Radiant</button>
+          <button class="history-filter" data-filter="good" onclick="setHistoryFilter('good',this)">Good</button>
+          <button class="history-filter" data-filter="neutral" onclick="setHistoryFilter('neutral',this)">Neutral</button>
+          <button class="history-filter" data-filter="low" onclick="setHistoryFilter('low',this)">Low</button>
+          <button class="history-filter" data-filter="difficult" onclick="setHistoryFilter('difficult',this)">Rough</button>
+          <button class="history-filter" data-filter="has-notes" onclick="setHistoryFilter('has-notes',this)">Has notes</button>
         </div>
 
         <!-- Mood trend strip -->
@@ -1095,7 +1095,11 @@ body {
           <div class="card-subtitle" id="moodTrendSubtitle"></div>
           <div id="moodTrendStrip" style="margin-top:14px;display:flex;gap:3px;flex-wrap:wrap;"></div>
           <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--muted);">
-            <span>😄 Radiant</span><span>🙂 Good</span><span>😐 Neutral</span><span>😔 Low</span><span>😞 Difficult</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#eef7f1;border:1px solid #4A8C5C;"></span>Radiant</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#fdf8e0;border:1px solid #B89A20;"></span>Good</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#f0f5f3;border:1px solid #7a8e88;"></span>Neutral</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#eef2fb;border:1px solid #4A6AAE;"></span>Low</span>
+            <span style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;background:#fdeef1;border:1px solid #B01840;"></span>Rough</span>
           </div>
         </div>
 
@@ -3729,7 +3733,7 @@ const MOOD_META = {
   good:      { emoji: '🙂', color: '#B89A20', bg: '#fdf8e0', label: 'Good' },
   neutral:   { emoji: '😐', color: '#7a8e88', bg: '#f0f5f3', label: 'Neutral' },
   low:       { emoji: '😔', color: '#4A6AAE', bg: '#eef2fb', label: 'Low' },
-  difficult: { emoji: '😞', color: '#B01840', bg: '#fdeef1', label: 'Difficult' },
+  difficult: { emoji: '😞', color: '#B01840', bg: '#fdeef1', label: 'Rough' },
 };
 
 function setHistoryFilter(filter, btn) {
@@ -3767,7 +3771,7 @@ function renderHistory() {
     const m = MOOD_META[mood];
     const dateLabel = new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     if (m) {
-      return `<div class="mood-dot" style="background:${m.bg};color:${m.color};border:1px solid ${m.color}33;" title="${dateLabel} · ${m.label}">${m.emoji}</div>`;
+      return `<div class="mood-dot" style="background:${m.bg};color:${m.color};border:1px solid ${m.color};" title="${dateLabel} · ${m.label}"></div>`;
     }
     return `<div class="mood-dot" style="background:var(--border);" title="${dateLabel} · no mood logged">·</div>`;
   }).join('');
@@ -3831,7 +3835,7 @@ function renderHistory() {
       };
 
       const moodBadge = mood
-        ? `<span class="history-mood-badge" style="background:${mood.bg};color:${mood.color};">${mood.emoji} ${mood.label}</span>`
+        ? `<span class="history-mood-badge" style="background:${mood.bg};color:${mood.color};">${mood.label}</span>`
         : '';
 
       const phaseBadge = phase
