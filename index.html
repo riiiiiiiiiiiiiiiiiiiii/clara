@@ -1132,7 +1132,8 @@ body {
             <button class="cal-nav" onclick="changeMonth(1)">›</button>
           </div>
           <div class="cal-grid" id="calGrid"></div>
-          <div class="phase-legend" style="margin-top:20px;">
+          <button class="btn-secondary" id="legendToggle" onclick="toggleLegend()" aria-expanded="false" aria-controls="phaseLegend" style="font-size:11px;padding:6px 12px;margin-top:16px;">Legend</button>
+          <div class="phase-legend" id="phaseLegend" style="margin-top:16px;display:none;">
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular-light);border:1px solid var(--follicular)"></div> <span>🌱 Follicular</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory-light);border:1px solid var(--ovulatory)"></div> <span>✨ Ovulatory</span></div>
@@ -1857,6 +1858,17 @@ function togglePeriodLogger() {
 // The period the editor under the calendar is pointed at: the latest one on
 // record, which is the one you are in while menstruating.
 let editingPeriodStart = null;
+
+function toggleLegend() {
+  const el = document.getElementById('phaseLegend');
+  const btn = document.getElementById('legendToggle');
+  if (!el || !btn) return;
+  const open = el.style.display !== 'none';
+  // Cleared rather than set, so the stylesheet's flex layout comes back
+  el.style.display = open ? 'none' : '';
+  btn.textContent = open ? 'Legend' : 'Hide legend';
+  btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+}
 
 function renderCurrentPeriodEditor() {
   const summary = document.getElementById('currentPeriodSummary');
