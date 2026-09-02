@@ -1632,9 +1632,11 @@ function getCurrentCycleInfo() {
   // bleeding. getPhaseForDay would read the wrapped day as menstrual.
   const phase = isOverdue ? 'luteal' : getPhaseForDay(cycleDay, cycleLength, periodLength);
 
-  // Today's phase is only recorded when a logged period actually covers today.
-  // Anything else is Clara projecting from the cycle start, and says so.
-  const isPredicted = isOverdue || (phase === 'menstrual' && !isLoggedPeriodDay(todayStr));
+  // Once a period start is logged, today is anchored to something real and is
+  // not a prediction. Projection is for cycles with nothing logged behind them
+  // and for a cycle that has run past its expected length.
+  const cycleStartLogged = !!(state.periodStarts && state.periodStarts.includes(cycleStart));
+  const isPredicted = isOverdue || !cycleStartLogged;
 
   const daysUntilNext = isOverdue ? 0 : cycleLength - cycleDay + 1;
 
@@ -1923,6 +1925,18 @@ function renderPeriodListInto(elId) {
           const startObj = new Date(d + 'T00:00:00');
           const startLabel = startObj.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'long' });
           const isMostRecent = d === state.lastPeriodDate;
+          // Ongoing means still running today, not merely the latest one on
+          // record: within the end date if there is one, otherwise inside the
+          // expected period length.
+          const todayStr = today();
+          let isOngoing;
+          if (period.end) {
+            isOngoing = todayStr >= period.start && todayStr <= period.end;
+          } else {
+            const lastDay = new Date(startObj);
+            lastDay.setDate(lastDay.getDate() + (state.periodLength || 5) - 1);
+            isOngoing = todayStr >= period.start && todayStr <= lastDay.toISOString().slice(0, 10);
+          }
           let durationStr = '';
           if (period.end) {
             const days = Math.round((new Date(period.end+'T00:00:00') - startObj) / 86400000) + 1;
@@ -1937,7 +1951,7 @@ function renderPeriodListInto(elId) {
               <div>
                 <div style="display:flex;align-items:center;gap:6px;">
                   <span style="font-size:13px;color:var(--text);">${startLabel}</span>
-                  ${isMostRecent ? '<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--secondary);background:var(--menstrual-light);border:1px solid var(--menstrual-mid);padding:1px 6px;border-radius:10px;">current</span>' : ''}
+                  ${isOngoing ? '<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--secondary);background:var(--menstrual-light);border:1px solid var(--menstrual-mid);padding:1px 6px;border-radius:10px;">ongoing</span>' : (isMostRecent ? '<span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:10px;">latest</span>' : '')}
                 </div>
                 <div style="margin-top:2px;">${durationStr}</div>
               </div>
