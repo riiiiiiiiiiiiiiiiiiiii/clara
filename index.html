@@ -398,7 +398,9 @@ body {
 .cal-day.phase-follicular { background: var(--follicular-light); color: var(--follicular); }
 .cal-day.phase-ovulatory { background: var(--ovulatory-light); color: var(--ovulatory); }
 .cal-day.phase-luteal { background: var(--luteal-light); color: var(--luteal); }
-.cal-day.predicted { opacity: 0.4; border: 1px dashed; }
+/* Dashed already says "estimated", so the fade only needs to be slight;
+   at 0.4 a month that is mostly ahead of today read as an empty grid. */
+.cal-day.predicted { opacity: 0.75; border: 1px dashed; }
 /* A day you actually logged: the same pink as the phase, ringed to mark it real */
 .cal-day.period-day { background: var(--menstrual-light); color: var(--menstrual); font-weight: 600; border: 1px solid var(--menstrual); }
 
@@ -1106,7 +1108,6 @@ body {
         <!-- Symptom summary -->
         <div class="card" style="margin-bottom:20px;">
           <div class="card-title">Most logged symptoms</div>
-          <div class="card-subtitle">Across all your entries</div>
           <div id="symptomSummary" style="margin-top:14px;"></div>
         </div>
 
