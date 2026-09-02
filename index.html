@@ -942,7 +942,6 @@ body {
       <div class="subnav" id="todaySubnav">
         <button class="subnav-btn active" id="subtab-today" onclick="showTodayTab('today')">Today</button>
         <button class="subnav-btn" id="subtab-log" onclick="showTodayTab('log')">Log</button>
-        <button class="subnav-btn" id="subtab-history" onclick="showTodayTab('history')">History</button>
       </div>
 
       <div id="todayView">
@@ -1070,10 +1069,13 @@ body {
           </div>
         </div>
       </div>
-    </div><!-- end logPanel-entry -->
 
-      <!-- History tab panel -->
-      <div id="logPanel-history" style="display:none;">
+      <!-- Past entries, inline under today's form -->
+      <div id="logPanel-history" style="margin-top:32px;">
+        <div style="border-top:1px solid var(--border);padding-top:26px;margin-bottom:20px;">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-style:italic;color:var(--text);line-height:1.2;">Your history</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;">Everything you've logged so far</div>
+        </div>
 
         <!-- Filter bar -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;">
@@ -1108,6 +1110,7 @@ body {
         <div id="historyEntries"></div>
 
       </div><!-- end logPanel-history -->
+    </div><!-- end logPanel-entry -->
 
     </div><!-- end page-today -->
 
@@ -1781,6 +1784,8 @@ function saveLog() {
     }
   }
   renderFunStats();
+  // History sits right below the form now, so it has to repaint immediately
+  renderHistory();
 }
 
 function togglePeriodLogger() {
@@ -3683,22 +3688,22 @@ function renderFunStats() {
 
 
 
-// Today, Log and History are three views of the same day behind one switch.
-// Logging used to be its own nav item with a second row of tabs inside it.
+// Today and Log are two views of the same day behind one switch. Past entries
+// sit inline underneath today's form rather than behind a third tab.
 let todayTab = 'today';
 
 function showTodayTab(tab) {
-  const tabs = ['today', 'log', 'history'];
+  const tabs = ['today', 'log'];
+  // 'history' was its own tab before it moved inside Log; keep old links working
+  if (tab === 'history') tab = 'log';
   todayTab = tabs.includes(tab) ? tab : 'today';
 
   document.getElementById('todayView').style.display = todayTab === 'today' ? '' : 'none';
   document.getElementById('logPanel-entry').style.display = todayTab === 'log' ? 'block' : 'none';
-  document.getElementById('logPanel-history').style.display = todayTab === 'history' ? 'block' : 'none';
 
   tabs.forEach(t => document.getElementById('subtab-' + t)?.classList.toggle('active', t === todayTab));
 
-  if (todayTab === 'log') updateLogPage();
-  if (todayTab === 'history') renderHistory();
+  if (todayTab === 'log') { updateLogPage(); renderHistory(); }
 
   // Land at the top of the view just opened
   document.querySelector('.main')?.scrollTo({ top: 0 });
@@ -3735,7 +3740,7 @@ function renderHistory() {
       <div class="card" style="text-align:center;padding:40px;color:var(--muted);">
         <div style="font-size:32px;margin-bottom:12px;">📓</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:8px;color:var(--secondary);">No entries yet</div>
-        <div style="font-size:13px;">Open the <span onclick="showTodayTab('log')" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Log</span> tab to start tracking your mood, energy and symptoms.</div>
+        <div style="font-size:13px;">Fill in the form above to start tracking your mood, energy and symptoms.</div>
       </div>`;
     document.getElementById('moodTrendStrip').innerHTML = '';
     document.getElementById('symptomSummary').innerHTML = '<div style="font-size:13px;color:var(--muted);">Log some days first to see your symptom patterns.</div>';
