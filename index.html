@@ -1128,11 +1128,12 @@ body {
           </div>
           <div class="cal-grid" id="calGrid"></div>
           <div class="phase-legend" style="margin-top:20px;">
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>Menstrual</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>Period start</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:#fce0e6;border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular)"></div> <span>🌱 Follicular</span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory)"></div> <span>✨ Ovulatory</span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--luteal)"></div> <span>🌙 Luteal</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual)"></div> <span>Menstrual</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular-light);border:1px solid var(--follicular)"></div> <span>🌱 Follicular</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory-light);border:1px solid var(--ovulatory)"></div> <span>✨ Ovulatory</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--luteal-light);border:1px solid var(--luteal)"></div> <span>🌙 Luteal</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--border);border:1px dashed var(--muted)"></div> <span>Predicted</span></div>
           </div>
         </div>
@@ -1155,7 +1156,6 @@ body {
 
 
         <div class="card" style="margin-bottom:20px;">
-          <div class="card-title">Upload your export file</div>
           <div id="floDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;"
                onclick="document.getElementById('floFileInput').click()"
                ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
