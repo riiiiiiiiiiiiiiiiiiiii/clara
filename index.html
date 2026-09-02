@@ -398,9 +398,9 @@ body {
 .cal-day.phase-follicular { background: var(--follicular-light); color: var(--follicular); }
 .cal-day.phase-ovulatory { background: var(--ovulatory-light); color: var(--ovulatory); }
 .cal-day.phase-luteal { background: var(--luteal-light); color: var(--luteal); }
-.cal-day.period-day { background: #fce0e6; color: var(--menstrual); font-weight: 500; }
-.cal-day.period-start { background: var(--menstrual); color: white; font-weight: 600; }
 .cal-day.predicted { opacity: 0.4; border: 1px dashed; }
+/* A day you actually logged: the same pink as the phase, ringed to mark it real */
+.cal-day.period-day { background: var(--menstrual-light); color: var(--menstrual); font-weight: 600; border: 1px solid var(--menstrual); }
 
 /* ─── INSIGHTS ─── */
 .insight-card {
@@ -1128,9 +1128,8 @@ body {
           </div>
           <div class="cal-grid" id="calGrid"></div>
           <div class="phase-legend" style="margin-top:20px;">
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>Period start</span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:#fce0e6;border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual)"></div> <span>Menstrual</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual-mid)"></div> <span>Menstrual</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular-light);border:1px solid var(--follicular)"></div> <span>🌱 Follicular</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory-light);border:1px solid var(--ovulatory)"></div> <span>✨ Ovulatory</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--luteal-light);border:1px solid var(--luteal)"></div> <span>🌙 Luteal</span></div>
@@ -1989,21 +1988,18 @@ function renderCalendar() {
       }
     }
 
-    // ── Mark actual period start days ──
-    if (state.periodStarts && state.periodStarts.includes(dateStr)) {
-      // Remove any phase-menstrual we added, replace with vivid period-start
-      cls = cls.replace(' phase-menstrual', '');
-      cls += ' period-start';
-    }
-
-    // ── Mark days within a logged bleeding range ──
-    if (state.periods) {
+    // ── Mark days a period was actually logged on: the start, plus the whole
+    //    range whenever an end date was entered. These are recorded rather than
+    //    calculated, so they never render as predicted.
+    let loggedPeriod = !!(state.periodStarts && state.periodStarts.includes(dateStr));
+    if (!loggedPeriod && state.periods) {
       for (const p of state.periods) {
-        if (p.end && dateStr > p.start && dateStr <= p.end) {
-          cls += ' period-day';
-          break;
-        }
+        if (p.end && dateStr >= p.start && dateStr <= p.end) { loggedPeriod = true; break; }
       }
+    }
+    if (loggedPeriod) {
+      cls = cls.replace(' predicted', '');
+      cls += ' period-day';
     }
 
     const hasLog = state.logs[dateStr];
