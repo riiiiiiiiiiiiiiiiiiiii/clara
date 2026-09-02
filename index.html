@@ -1128,25 +1128,18 @@ body {
           </div>
           <div class="cal-grid" id="calGrid"></div>
           <div class="phase-legend" style="margin-top:20px;">
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>Menstrual <span style="font-size:10px;color:var(--muted);">· red-pink</span></span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual)"></div> <span>Menstrual</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:#fce0e6;border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular)"></div> <span>🌱 Follicular <span style="font-size:10px;color:var(--muted);">· warm peach</span></span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory)"></div> <span>✨ Ovulatory <span style="font-size:10px;color:var(--muted);">· golden</span></span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--luteal)"></div> <span>🌙 Luteal <span style="font-size:10px;color:var(--muted);">· soft blue</span></span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular)"></div> <span>🌱 Follicular</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory)"></div> <span>✨ Ovulatory</span></div>
+            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--luteal)"></div> <span>🌙 Luteal</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--border);border:1px dashed var(--muted)"></div> <span>Predicted</span></div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title">Upcoming</div>
-          <div class="card-subtitle">Next events in your cycle</div>
-          <div id="upcomingList" style="margin-top:8px;"></div>
-
-          <div style="margin-top:28px;">
-            <div class="card-title">Cycle Stats</div>
-            <div class="card-subtitle">Based on your logs</div>
-            <div id="cycleStats"></div>
-          </div>
+          <div class="card-title">Cycle Stats</div>
+          <div id="cycleStats"></div>
         </div>
       </div>
 
@@ -1163,7 +1156,6 @@ body {
 
         <div class="card" style="margin-bottom:20px;">
           <div class="card-title">Upload your export file</div>
-          <div class="card-subtitle">Your data never leaves your browser &mdash; everything is processed locally</div>
           <div id="floDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:20px;"
                onclick="document.getElementById('floFileInput').click()"
                ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
@@ -1208,7 +1200,6 @@ body {
 
       <div class="page-header">
         <div class="page-title" id="insightsTitle">Your <em>Insights</em></div>
-        <div class="page-subtitle" id="insightsSubtitle">Everything about each phase: mood, body &amp; performance</div>
       </div>
 
       <div id="insightsPhaseView">
@@ -1263,7 +1254,6 @@ body {
       <div class="setup-wrap">
         <div class="card" style="margin-bottom:20px;">
           <div class="card-title">Cycle Details</div>
-          <div class="card-subtitle">Used to calculate your current phase and predictions</div>
 
           <div class="setup-field">
             <label class="setup-label">First day of last period</label>
@@ -2022,47 +2012,7 @@ function renderCalendar() {
 
   grid.innerHTML = html;
 
-  // Upcoming
-  renderUpcoming();
   renderStats();
-}
-
-function renderUpcoming() {
-  const info = getCurrentCycleInfo();
-  if (!info) { document.getElementById('upcomingList').innerHTML = '<div style="font-size:13px;color:var(--muted);">Set up your cycle to see upcoming events.</div>'; return; }
-
-  const events = [];
-  const now = parseDate(today());
-
-  // Next period
-  events.push({ days: info.daysUntilNext, label: '🩸 Next period starts', color: 'var(--menstrual)' });
-  // Ovulation only shows once: the "ovulatory phase begins" transition below
-  // lands on the same day, so listing a window here just said it twice.
-  if (info.daysToOv <= 0) {
-    const nextOvDays = info.cycleLength - info.cycleDay + info.ovDay;
-    events.push({ days: nextOvDays, label: '✨ Next ovulation', color: 'var(--ovulatory)' });
-  }
-
-  // Phase transitions
-  const cl = info.cycleLength; const pl = info.periodLength;
-  const follStart = pl + 1; const ovStart = getOvulationDay(cl, pl); const lutStart = ovStart + 2;
-  const transitions = [
-    { day: follStart, label: '🌱 Follicular phase begins', color: 'var(--follicular)' },
-    { day: ovStart, label: '✨ Ovulatory phase begins', color: 'var(--ovulatory)' },
-    { day: lutStart, label: '🌙 Luteal phase begins', color: 'var(--luteal)' },
-  ];
-  transitions.forEach(t => {
-    const daysAway = t.day - info.cycleDay;
-    if (daysAway > 0) events.push({ days: daysAway, label: t.label, color: t.color });
-  });
-
-  events.sort((a,b) => a.days - b.days);
-
-  document.getElementById('upcomingList').innerHTML = events.slice(0,5).map(e => {
-    const dateObj = new Date(); dateObj.setDate(dateObj.getDate() + e.days);
-    const dateLabel = e.days === 0 ? 'Today' : e.days === 1 ? 'Tomorrow' : dateObj.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-    return `<div class="stat-row"><span class="stat-label">${e.label}</span><span style="font-family:'Cormorant Garamond',serif;font-size:16px;color:${e.color};">${dateLabel}</span></div>`;
-  }).join('');
 }
 
 function renderStats() {
@@ -2101,13 +2051,7 @@ function showInsightsTab(tab) {
 
   // The heading names whichever view is open
   const title = document.getElementById('insightsTitle');
-  const sub = document.getElementById('insightsSubtitle');
   if (title) title.innerHTML = onHormones ? 'Hormones <em>Deep Dive</em>' : 'Your <em>Insights</em>';
-  if (sub) {
-    sub.textContent = onHormones
-      ? 'The 6 hormones driving your cycle: what they are, what they do, and how they shift'
-      : 'Everything about each phase: mood, body & performance';
-  }
 
   // Land at the top of the view just opened, not wherever the other one was left
   document.querySelector('.main')?.scrollTo({ top: 0 });
