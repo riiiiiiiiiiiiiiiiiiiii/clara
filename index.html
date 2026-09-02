@@ -94,8 +94,8 @@ body {
 
 /* The app mark: the cycle as four phase arcs. Same drawing as the PWA icon. */
 .brand-mark {
-  width: 26px;
-  height: 26px;
+  width: 23px;
+  height: 23px;
   flex-shrink: 0;
   color: var(--main);
 }
@@ -3258,15 +3258,25 @@ function confirmFloImport() {
   // An import rewrites the whole period history, so keep a version of what's
   // here now: the same safety net as restoring a backup file.
   maybeSnapshot(JSON.parse(JSON.stringify(state)), { snapshot: true, reason: 'before-flo-import' });
-  state.lastPeriodDate = pendingFloData.mostRecentPeriod;
   state.cycleLength = pendingFloData.avgCycleLength;
   state.periodLength = pendingFloData.periodLength || state.periodLength || 5;
-  // Store full history, migrate to periods[] structure
-  state.periodStarts = pendingFloData.allPeriodStarts;
-  // Merge with existing periods, preserving any end dates already logged
-  const existingByStart = {};
-  (state.periods || []).forEach(p => existingByStart[p.start] = p);
-  state.periods = pendingFloData.allPeriodStarts.map(s => existingByStart[s] || { start: s, end: null });
+
+  // Union: keep every period already logged here AND everything in the Flo
+  // file. An import must never drop periods the user entered by hand, so seed
+  // the map from ours first — that also keeps end dates when both sides share
+  // a start date.
+  const byStart = {};
+  (state.periods || []).forEach(p => byStart[p.start] = p);
+  (pendingFloData.allPeriodStarts || []).forEach(s => {
+    if (!byStart[s]) byStart[s] = { start: s, end: null };
+  });
+  state.periods = Object.values(byStart).sort((a, b) => a.start.localeCompare(b.start));
+  state.periodStarts = state.periods.map(p => p.start);
+
+  // Most recent start wins, whether it came from Flo or was logged here. Taking
+  // the file's date unconditionally could drag the current cycle day backwards.
+  state.lastPeriodDate = state.periodStarts[state.periodStarts.length - 1] || pendingFloData.mostRecentPeriod;
+
   state.importedFrom = 'flo';
   state.importedCount = pendingFloData.totalPeriods;
   save({ snapshot: true, reason: 'flo-import' });
