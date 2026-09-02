@@ -1264,7 +1264,7 @@ body {
             <label class="setup-label">Average cycle length (days)</label>
             <div class="slider-wrap">
               <span style="font-size:12px;color:var(--muted);">21</span>
-              <input type="range" id="cycleLengthSlider" aria-label="Average cycle length in days" min="21" max="40" value="28" oninput="document.getElementById('cycleLengthVal').textContent=this.value">
+              <input type="range" id="cycleLengthSlider" aria-label="Average cycle length in days" min="21" max="40" value="28" oninput="document.getElementById('cycleLengthVal').textContent=this.value; cycleLengthTouched = true;">
               <span style="font-size:12px;color:var(--muted);">40</span>
               <span class="slider-val" id="cycleLengthVal">28</span>
             </div>
@@ -1275,7 +1275,7 @@ body {
             <label class="setup-label">Average period length (days)</label>
             <div class="slider-wrap">
               <span style="font-size:12px;color:var(--muted);">2</span>
-              <input type="range" id="periodLengthSlider" aria-label="Average period length in days" min="2" max="8" value="5" oninput="document.getElementById('periodLengthVal').textContent=this.value">
+              <input type="range" id="periodLengthSlider" aria-label="Average period length in days" min="2" max="8" value="5" oninput="document.getElementById('periodLengthVal').textContent=this.value; periodLengthTouched = true;">
               <span style="font-size:12px;color:var(--muted);">8</span>
               <span class="slider-val" id="periodLengthVal">5</span>
             </div>
@@ -1365,6 +1365,8 @@ let state = {
   periods: [],        // [{start:'YYYY-MM-DD', end:'YYYY-MM-DD'|null}]
   importedFrom: null,
   importedCount: 0,
+  cycleLengthManual: false,  // set once the slider is moved; stops the auto-average
+  periodLengthManual: false, // overwriting a number that was picked deliberately
   updatedAt: null,    // set on every save, used to reconcile the backup copies
 };
 
@@ -1806,8 +1808,8 @@ function addPeriodEntry(startInputId, endInputId) {
 
   normalisePeriods({ repointLastPeriod: true });
 
-  // Recalculate avg cycle length from gaps
-  if (state.periodStarts.length >= 2) {
+  // Recalculate avg cycle length from gaps, unless it was set by hand
+  if (!state.cycleLengthManual && state.periodStarts.length >= 2) {
     const gaps = [];
     for (let i = 1; i < state.periodStarts.length; i++) {
       const gap = (parseDate(state.periodStarts[i]) - parseDate(state.periodStarts[i-1])) / 86400000;
@@ -1821,7 +1823,7 @@ function addPeriodEntry(startInputId, endInputId) {
     .filter(p => p.end)
     .map(p => (parseDate(p.end) - parseDate(p.start)) / 86400000 + 1)
     .filter(d => d >= 1 && d <= 10);
-  if (durations.length > 0) state.periodLength = Math.round(durations.reduce((a,b)=>a+b,0)/durations.length);
+  if (!state.periodLengthManual && durations.length > 0) state.periodLength = Math.round(durations.reduce((a,b)=>a+b,0)/durations.length);
 
   // Clear inputs
   document.getElementById(startInputId).value = '';
@@ -2117,12 +2119,19 @@ function showInsight(phase) {
 }
 
 // ─── SETUP ───
+// Set when a slider is actually dragged, so merely saving a date does not count
+// as choosing a length and switch the running average off.
+let cycleLengthTouched = false;
+let periodLengthTouched = false;
+
 function saveSetup() {
   const val = document.getElementById('lastPeriodInput').value;
   if (!val) { showToast('Please select a date first'); return; }
   state.lastPeriodDate = val;
   state.cycleLength = parseInt(document.getElementById('cycleLengthSlider').value) || 28;
   state.periodLength = parseInt(document.getElementById('periodLengthSlider').value) || 5;
+  if (cycleLengthTouched) state.cycleLengthManual = true;
+  if (periodLengthTouched) state.periodLengthManual = true;
 
   // Ensure lastPeriodDate is in periods[] so calendar shows it
   if (!state.periods.find(p => p.start === val)) {
@@ -2377,6 +2386,8 @@ function applyLoaded(loaded) {
   if (loaded.lastPeriodDate !== undefined) state.lastPeriodDate = loaded.lastPeriodDate;
   if (loaded.cycleLength) state.cycleLength = loaded.cycleLength;
   if (loaded.periodLength) state.periodLength = loaded.periodLength;
+  if (loaded.cycleLengthManual) state.cycleLengthManual = true;
+  if (loaded.periodLengthManual) state.periodLengthManual = true;
   if (loaded.importedFrom) state.importedFrom = loaded.importedFrom;
   if (loaded.importedCount) state.importedCount = loaded.importedCount;
   if (loaded.updatedAt) state.updatedAt = loaded.updatedAt;
