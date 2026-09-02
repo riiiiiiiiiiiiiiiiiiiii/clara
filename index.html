@@ -1133,7 +1133,6 @@ body {
           <div class="cal-grid" id="calGrid"></div>
           <div class="phase-legend" style="margin-top:20px;">
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
-            <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual-mid)"></div> <span>Menstrual</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular-light);border:1px solid var(--follicular)"></div> <span>🌱 Follicular</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--ovulatory-light);border:1px solid var(--ovulatory)"></div> <span>✨ Ovulatory</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--luteal-light);border:1px solid var(--luteal)"></div> <span>🌙 Luteal</span></div>
@@ -2146,6 +2145,10 @@ function renderCalendar() {
     if (isLoggedPeriodDay(dateStr)) {
       cls = cls.replace(' predicted', '');
       cls += ' period-day';
+    } else if (cls.includes('phase-menstrual') && !cls.includes('predicted')) {
+      // Bleeding Clara worked out rather than was told about is an estimate,
+      // whether it sits behind us or ahead
+      cls += ' predicted';
     }
 
     const hasLog = state.logs[dateStr];
