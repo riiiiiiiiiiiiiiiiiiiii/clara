@@ -1147,6 +1147,26 @@ body {
         </div>
       </div>
 
+      <!-- Correct the dates of the period you are in -->
+      <div class="card" id="currentPeriodCard" style="margin-top:20px;max-width:640px;">
+        <div class="card-title">This period</div>
+        <div id="currentPeriodSummary" style="font-size:13px;color:var(--text);line-height:1.8;margin-top:4px;"></div>
+        <button class="btn-secondary" id="currentPeriodEditBtn" onclick="toggleCurrentPeriodEdit()" style="font-size:12px;padding:8px 16px;margin-top:14px;">Edit dates</button>
+        <div id="currentPeriodForm" style="display:none;margin-top:18px;border-top:1px solid var(--border);padding-top:18px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div>
+              <label class="form-label">Started</label>
+              <input class="setup-input" type="date" id="currentPeriodStart" aria-label="Start date of this period" style="width:100%;">
+            </div>
+            <div>
+              <label class="form-label">Ended <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(leave empty if still bleeding)</span></label>
+              <input class="setup-input" type="date" id="currentPeriodEnd" aria-label="End date of this period" style="width:100%;">
+            </div>
+            <button class="btn-primary" onclick="saveCurrentPeriodEdit()" style="padding:12px 16px;">Save</button>
+          </div>
+        </div>
+      </div>
+
 
 
 
@@ -1834,6 +1854,95 @@ function togglePeriodLogger() {
   }
 }
 
+// The period the editor under the calendar is pointed at: the latest one on
+// record, which is the one you are in while menstruating.
+let editingPeriodStart = null;
+
+function renderCurrentPeriodEditor() {
+  const summary = document.getElementById('currentPeriodSummary');
+  if (!summary) return;
+  const btn = document.getElementById('currentPeriodEditBtn');
+  const form = document.getElementById('currentPeriodForm');
+  const starts = state.periodStarts || [];
+
+  if (starts.length === 0) {
+    editingPeriodStart = null;
+    summary.innerHTML = '<span style="color:var(--muted);">No period logged yet. Add one from My Cycle and it will show here.</span>';
+    btn.style.display = 'none';
+    form.style.display = 'none';
+    return;
+  }
+
+  const startVal = starts[starts.length - 1];
+  const per = state.periods.find(p => p.start === startVal) || { start: startVal, end: null };
+  editingPeriodStart = per.start;
+  btn.style.display = '';
+
+  const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
+  if (per.end) {
+    const days = Math.round((parseDate(per.end) - parseDate(per.start)) / 86400000) + 1;
+    summary.innerHTML = `Started <strong>${fmt(per.start)}</strong><br>Ended <strong>${fmt(per.end)}</strong> · ${days} day${days !== 1 ? 's' : ''}`;
+  } else {
+    summary.innerHTML = `Started <strong>${fmt(per.start)}</strong><br><span style="color:var(--muted);">No end date yet — add one when it finishes.</span>`;
+  }
+
+  document.getElementById('currentPeriodStart').value = per.start;
+  document.getElementById('currentPeriodEnd').value = per.end || '';
+}
+
+function toggleCurrentPeriodEdit() {
+  const form = document.getElementById('currentPeriodForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function saveCurrentPeriodEdit() {
+  const newStart = document.getElementById('currentPeriodStart').value;
+  const newEnd = document.getElementById('currentPeriodEnd').value || null;
+
+  if (!newStart) { showToast('Please pick a start date'); return; }
+  if (newStart > today()) { showToast('A period cannot start in the future'); return; }
+  if (newEnd && newEnd < newStart) { showToast('End date must be on or after the start date'); return; }
+
+  // Moving the start onto a day another period already occupies would leave two
+  // entries for the same date
+  if (newStart !== editingPeriodStart && state.periods.some(p => p.start === newStart)) {
+    showToast('Another period is already logged on that date'); return;
+  }
+
+  const per = state.periods.find(p => p.start === editingPeriodStart);
+  if (per) { per.start = newStart; per.end = newEnd; }
+  else state.periods.push({ start: newStart, end: newEnd });
+
+  normalisePeriods({ repointLastPeriod: true });
+  recalcAveragesFromHistory();
+  save();
+  updateAll();
+  renderCalendar();
+  renderAllPeriodLists();
+  document.getElementById('currentPeriodForm').style.display = 'none';
+  showToast('Cycle dates updated ✓');
+}
+
+// Averages follow the logged history, except where a value was picked by hand.
+function recalcAveragesFromHistory() {
+  if (!state.cycleLengthManual && state.periodStarts.length >= 2) {
+    const gaps = [];
+    for (let i = 1; i < state.periodStarts.length; i++) {
+      const gap = (parseDate(state.periodStarts[i]) - parseDate(state.periodStarts[i-1])) / 86400000;
+      if (gap >= 18 && gap <= 60) gaps.push(gap);
+    }
+    if (gaps.length > 0) state.cycleLength = Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+  }
+
+  const durations = state.periods
+    .filter(p => p.end)
+    .map(p => (parseDate(p.end) - parseDate(p.start)) / 86400000 + 1)
+    .filter(d => d >= 1 && d <= 10);
+  if (!state.periodLengthManual && durations.length > 0) {
+    state.periodLength = Math.round(durations.reduce((a,b)=>a+b,0)/durations.length);
+  }
+}
+
 function addPeriodEntry(startInputId, endInputId) {
   const startVal = document.getElementById(startInputId)?.value;
   if (!startVal) { showToast('Please pick a start date first'); return; }
@@ -1852,23 +1961,7 @@ function addPeriodEntry(startInputId, endInputId) {
   }
 
   normalisePeriods({ repointLastPeriod: true });
-
-  // Recalculate avg cycle length from gaps, unless it was set by hand
-  if (!state.cycleLengthManual && state.periodStarts.length >= 2) {
-    const gaps = [];
-    for (let i = 1; i < state.periodStarts.length; i++) {
-      const gap = (parseDate(state.periodStarts[i]) - parseDate(state.periodStarts[i-1])) / 86400000;
-      if (gap >= 18 && gap <= 60) gaps.push(gap);
-    }
-    if (gaps.length > 0) state.cycleLength = Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
-  }
-
-  // Recalculate avg period length from durations
-  const durations = state.periods
-    .filter(p => p.end)
-    .map(p => (parseDate(p.end) - parseDate(p.start)) / 86400000 + 1)
-    .filter(d => d >= 1 && d <= 10);
-  if (!state.periodLengthManual && durations.length > 0) state.periodLength = Math.round(durations.reduce((a,b)=>a+b,0)/durations.length);
+  recalcAveragesFromHistory();
 
   // Clear inputs
   document.getElementById(startInputId).value = '';
@@ -2062,6 +2155,7 @@ function renderCalendar() {
   grid.innerHTML = html;
 
   renderStats();
+  renderCurrentPeriodEditor();
 }
 
 function renderStats() {
@@ -3665,7 +3759,7 @@ function renderFunStats() {
   });
 
   const topMood = Object.entries(moodCounts).sort((a,b)=>b[1]-a[1])[0];
-  const moodMeta = topMood ? { radiant:'😄',good:'🙂',neutral:'😐',low:'😔',difficult:'😞' }[topMood[0]] : null;
+  const topMoodMeta = topMood ? MOOD_META[topMood[0]] : null;
 
   const highestEnergyPhase = Object.entries(energyByPhase)
     .map(([ph, vals]) => [ph, vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0])
@@ -3683,7 +3777,7 @@ function renderFunStats() {
   ).sort((a,b)=>b[1]-a[1])[0];
 
   const stats = [
-    topMood ? `${moodMeta} Most common mood: <strong>${topMood[0]}</strong> (${topMood[1]}×)` : null,
+    topMood ? `${topMoodMeta.emoji} Most common mood: <strong>${topMoodMeta.label}</strong> (${topMood[1]}×)` : null,
     highestEnergyPhase ? `⚡ Most energetic phase: <strong>${highestEnergyPhase[0]}</strong> (avg ${highestEnergyPhase[1].toFixed(1)}/10)` : null,
     bestDow ? `📅 Best day of the week: <strong>${dayNames[bestDow[0]]}</strong>` : null,
     topSymptom ? `🔁 Most logged symptom: <strong>${topSymptom[0]}</strong> (${topSymptom[1]}×)` : null,
