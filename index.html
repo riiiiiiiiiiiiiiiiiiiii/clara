@@ -1124,7 +1124,7 @@ body {
     <!-- CALENDAR PAGE -->
     <div class="page" id="page-calendar">
       <h1 class="sr-only">Calendar</h1>
-      <div class="grid-2">
+      <div class="grid-2" style="align-items:start;">
         <div class="card">
           <div class="cal-header">
             <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
@@ -1132,7 +1132,7 @@ body {
             <button class="cal-nav" onclick="changeMonth(1)">›</button>
           </div>
           <div class="cal-grid" id="calGrid"></div>
-          <button class="btn-secondary" id="legendToggle" onclick="toggleLegend()" aria-expanded="false" aria-controls="phaseLegend" style="font-size:11px;padding:6px 12px;margin-top:16px;">Legend</button>
+          <button class="btn-secondary" id="legendToggle" onclick="toggleLegend()" aria-expanded="false" aria-controls="phaseLegend" aria-label="Show legend" title="What the colours mean" style="font-size:15px;line-height:1;padding:0;width:28px;height:28px;margin-top:16px;">+</button>
           <div class="phase-legend" id="phaseLegend" style="margin-top:16px;display:none;">
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--menstrual-light);border:1px solid var(--menstrual)"></div> <span>Period days</span></div>
             <div class="phase-legend-item"><div class="phase-dot" style="background:var(--follicular-light);border:1px solid var(--follicular)"></div> <span>🌱 Follicular</span></div>
@@ -1149,7 +1149,7 @@ body {
       </div>
 
       <!-- Correct the dates of the period you are in -->
-      <div class="card" id="currentPeriodCard" style="margin-top:20px;max-width:640px;">
+      <div class="card" id="currentPeriodCard" style="margin-top:20px;">
         <div class="card-title">This period</div>
         <div id="currentPeriodSummary" style="font-size:13px;color:var(--text);line-height:1.8;margin-top:4px;"></div>
         <button class="btn-secondary" id="currentPeriodEditBtn" onclick="toggleCurrentPeriodEdit()" style="font-size:12px;padding:8px 16px;margin-top:14px;">Edit dates</button>
@@ -1171,7 +1171,7 @@ body {
 
 
 
-      <div id="floImport" style="margin-top:40px;border-top:1px solid var(--border);padding-top:32px;">
+      <div id="floImport" style="margin-top:28px;border-top:1px solid var(--border);padding-top:26px;">
         <div class="page-header" style="margin-bottom:20px;">
           <div class="page-title" style="font-size:32px;">Import your <em>data</em></div>
           <div class="page-subtitle">Bring your history over from another app and the calendar above fills in</div>
@@ -1866,7 +1866,9 @@ function toggleLegend() {
   const open = el.style.display !== 'none';
   // Cleared rather than set, so the stylesheet's flex layout comes back
   el.style.display = open ? 'none' : '';
-  btn.textContent = open ? 'Legend' : 'Hide legend';
+  // The glyph alone says nothing to a screen reader, so the label carries it
+  btn.textContent = open ? '+' : '\u2212';
+  btn.setAttribute('aria-label', open ? 'Show legend' : 'Hide legend');
   btn.setAttribute('aria-expanded', open ? 'false' : 'true');
 }
 
