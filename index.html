@@ -1595,6 +1595,35 @@ function getOvulationDay(cycleLength, periodLength) {
   return Math.max(pl + 2, cycleLength - LUTEAL_DAYS);
 }
 
+// state.cycleLength is the MEAN of logged gaps, so roughly half of real periods
+// land after it. Calling a period late the moment it passes that midpoint fires
+// on about half of all perfectly normal cycles, so it only counts as late once
+// it clears the spread around the mean too. Same gaps recalcAveragesFromHistory()
+// averages; the fallback applies while history is too thin for a spread to mean
+// anything.
+const DEFAULT_GRACE_DAYS = 3;
+function getCycleGraceDays() {
+  const starts = state.periodStarts || [];
+  const gaps = [];
+  for (let i = 1; i < starts.length; i++) {
+    const gap = (parseDate(starts[i]) - parseDate(starts[i-1])) / 86400000;
+    if (gap >= 18 && gap <= 60) gaps.push(gap);
+  }
+  if (gaps.length < 3) return DEFAULT_GRACE_DAYS;
+  const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+  const variance = gaps.reduce((a, b) => a + (b - mean) * (b - mean), 0) / gaps.length;
+  // 1.5 SD, not 1: one standard deviation still leaves ~16% of ordinary cycles
+  // outside the window, and the floor below would flatten a 26-33 day spread
+  // onto the same grace as a metronomic 28. Floor of 2 so even a metronomic
+  // cycle gets a day's slack; ceiling of 7 so a very irregular one doesn't
+  // swallow the signal entirely.
+  return Math.min(Math.max(Math.round(Math.sqrt(variance) * 1.5), 2), 7);
+}
+
+// Past this point "ovulation probably came later" stops being the most useful
+// thing to say and a test or a clinician is the real next step.
+const VERY_LATE_DAYS = 21;
+
 function getPhaseForDay(cycleDay, cycleLength, periodLength) {
   const pl = periodLength || 5;
   if (cycleDay <= pl) return 'menstrual';
@@ -1607,10 +1636,11 @@ function getPhaseForDay(cycleDay, cycleLength, periodLength) {
 // How a cycle day should be qualified: late, projected, or neither.
 function cycleDaySuffix(info) {
   if (!info) return '';
-  if (info.isOverdue) {
+  if (info.isLate) {
     const d = info.overdueBy;
     return ` · period ${d} day${d === 1 ? '' : 's'} late`;
   }
+  if (info.isDue) return ' · period due around now';
   if (info.isPredicted) return ' · predicted';
   return '';
 }
@@ -1651,12 +1681,25 @@ function getCurrentCycleInfo() {
   // new one quietly began. Wrapping back to day 1 here used to make Clara state
   // someone was bleeding on the strength of a month-old date, so report the
   // real day and how late it is instead.
-  const isOverdue = cycleDay > cycleLength;
-  const overdueBy = isOverdue ? cycleDay - cycleLength : 0;
+  const graceDays = getCycleGraceDays();
+  const overdueBy = Math.max(0, cycleDay - cycleLength);
+  // Due: past the predicted date but still inside this person's normal spread,
+  // so nothing is actually unusual yet and the luteal read still holds.
+  const isDue = overdueBy > 0 && overdueBy <= graceDays;
+  // Late: clear of the spread. The likeliest explanation is that ovulation came
+  // later than predicted, which would mean this is still the FOLLICULAR phase
+  // with progesterone low — so Clara stops asserting a phase here rather than
+  // stretching luteal indefinitely. The corpus luteum lives ~14 ± 2 days and
+  // cannot idle past that without a pregnancy, so a luteal phase this long is
+  // not what is happening.
+  const isLate = overdueBy > graceDays;
+  const isVeryLate = overdueBy > VERY_LATE_DAYS;
+  const isOverdue = isDue || isLate;
 
-  // Luteal is the honest phase while a period is late: past ovulation, not yet
-  // bleeding. getPhaseForDay would read the wrapped day as menstrual.
+  // Luteal stays the structural fallback so every phase-keyed lookup still
+  // resolves; phaseUncertain is what the UI reads to stop claiming it is true.
   const phase = isOverdue ? 'luteal' : getPhaseForDay(cycleDay, cycleLength, periodLength);
+  const phaseUncertain = isLate;
 
   // Once a period start is logged, today is anchored to something real and is
   // not a prediction. Projection is for cycles with nothing logged behind them
@@ -1675,7 +1718,7 @@ function getCurrentCycleInfo() {
   const daysToOv = ovDay - cycleDay;
 
   return { cycleDay, cycleLength, periodLength, phase, daysUntilNext, nextPeriod, ovDay, daysToOv, cycleStart,
-           isOverdue, overdueBy, isPredicted };
+           isOverdue, overdueBy, isPredicted, isDue, isLate, isVeryLate, graceDays, phaseUncertain };
 }
 
 // ─── SIDEBAR ───
@@ -1703,6 +1746,47 @@ function updateSidebar() {
     : `Cycle Day ${info.cycleDay} of ${info.cycleLength}${cycleDaySuffix(info)}`;
 }
 
+// Everything the Today page shows once a period is late enough that the phase
+// is genuinely unknown. The hormone bars are predictions keyed off a phase, so
+// with the phase in doubt they are withdrawn rather than left asserting numbers.
+function renderLateToday(info) {
+  const d = info.overdueBy;
+  const dayWord = `${d} day${d === 1 ? '' : 's'}`;
+
+  document.getElementById('todayBanner').style.background = '#f0ede8';
+  const name = document.getElementById('todayPhaseName');
+  name.style.color = 'var(--secondary)';
+  name.textContent = 'Period Late';
+  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay}${cycleDaySuffix(info)}`;
+  document.getElementById('todayTagline').textContent =
+    `Your period is ${dayWord} past its predicted date, which is beyond the usual spread of your logged cycles. Clara has paused its phase and hormone estimates until your next period is logged.`;
+
+  document.getElementById('hormoneSubtitle').textContent = 'Paused while the phase is uncertain';
+  document.getElementById('hormoneGrid').innerHTML = `
+    <div style="font-size:13px;line-height:1.8;color:#1e2820;">
+      <p style="margin:0 0 12px;">Clara estimates hormones from where you are in a predicted cycle. You are ${dayWord} past that prediction, so there is no longer a phase it can key them to.</p>
+      <p style="margin:0 0 12px;"><strong>The likeliest explanation is later ovulation.</strong> The luteal phase is held to roughly 14 days by the lifespan of the corpus luteum and cannot stretch to cover a long delay. Almost always it is the follicular phase that ran long instead, which would mean progesterone is still low and your fertile window is ahead of you rather than behind you. Stress, illness, travel, heavy training, and undereating all commonly push ovulation later.</p>
+      <p style="margin:0 0 12px;">Less often a cycle passes without ovulating at all. No corpus luteum forms, no progesterone rise happens, and the bleed that eventually arrives is driven by oestrogen alone — often later, heavier, or more erratic than usual.</p>
+      ${info.isVeryLate
+        ? `<p style="margin:0;padding:12px 14px;border-radius:10px;background:var(--menstrual-light);border:1px solid var(--menstrual-mid);"><strong>More than three weeks late.</strong> Clara cannot tell these apart from dates alone. A pregnancy test, or a conversation with a clinician, is the reliable next step.</p>`
+        : `<p style="margin:0;">Logging your period the day it starts will re-anchor all of this.</p>`}
+    </div>`;
+
+  document.getElementById('expectList').innerHTML = [
+    '🩸 Log your period as soon as it starts; that re-anchors every prediction',
+    '🌱 If ovulation ran late, fertile signs (clear stretchy mucus, rising libido) may still be ahead',
+    '😮‍💨 Stress, illness, travel, heavy training, and undereating all delay ovulation',
+    '📊 The more period dates you log, the wider or tighter Clara makes this window',
+    info.isVeryLate
+      ? '🧪 Three weeks past due: worth a pregnancy test or a clinician'
+      : '🧘 A late cycle on its own is common and usually resolves by itself',
+  ].map(e => `<div>${e}</div>`).join('');
+
+  // The alter ego is phase flavour. With the phase unknown there is nothing
+  // honest to show, so it stays hidden.
+  document.getElementById('alterEgoCard').style.display = 'none';
+}
+
 // ─── TODAY PAGE ───
 function updateToday() {
   const now = new Date();
@@ -1721,6 +1805,14 @@ function updateToday() {
   }
 
   const p = PHASES[info.phase];
+
+  // Past the grace window Clara no longer knows which phase this is, so it says
+  // so instead of dressing a guess up as a reading.
+  if (info.phaseUncertain) {
+    renderLateToday(info);
+    return;
+  }
+
   banner.style.background = p.light;
   document.getElementById('todayPhaseName').style.color = p.color;
   document.getElementById('todayPhaseName').textContent = `${p.name} Phase`;
@@ -1760,7 +1852,13 @@ let selectedSymptoms = [];
 function updateLogPage() {
   document.getElementById('logDateDisplay').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
   const info = getCurrentCycleInfo();
-  document.getElementById('logPhaseDisplay').textContent = info ? `${PHASES[info.phase].emoji ? PHASES[info.phase].emoji + ' ' : ''}${PHASES[info.phase].name} Phase · Day ${info.cycleDay}${cycleDaySuffix(info)}` : 'Set up your cycle to see phase';
+  // Naming a phase next to "period 9 days late" would contradict itself, so the
+  // Journal header drops the phase once it is uncertain.
+  document.getElementById('logPhaseDisplay').textContent = !info
+    ? 'Set up your cycle to see phase'
+    : info.phaseUncertain
+      ? `Phase uncertain · Day ${info.cycleDay}${cycleDaySuffix(info)}`
+      : `${PHASES[info.phase].emoji ? PHASES[info.phase].emoji + ' ' : ''}${PHASES[info.phase].name} Phase · Day ${info.cycleDay}${cycleDaySuffix(info)}`;
 
   // Rebuild the form from today's stored log, so nothing carries over
   // from the last day logged in this session
