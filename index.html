@@ -1739,11 +1739,24 @@ function updateSidebar() {
   const p = PHASES[info.phase];
   const ringPct = Math.min(info.cycleDay / info.cycleLength, 1);
   orb.style.background = `conic-gradient(#E8C84A ${ringPct * 360}deg, rgba(255,255,255,0.08) 0deg)`;
-  orb.innerHTML = `<div style="width:86px;height:86px;border-radius:50%;background:#1C3A35;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">${p.emoji || `<span style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--main);opacity:0.85;">${info.cycleDay}</span>`}</div>`;
-  phaseName.textContent = p.name;
-  dayCount.textContent = info.isOverdue
-    ? `Day ${info.cycleDay}${cycleDaySuffix(info)}`
-    : `Cycle Day ${info.cycleDay} of ${info.cycleLength}${cycleDaySuffix(info)}`;
+  // The phase emoji is the phase's own badge, so an uncertain phase shows the
+  // cycle day instead; the luteal moon here would reinstate the claim the rest
+  // of the sidebar just dropped.
+  const orbGlyph = (!info.phaseUncertain && p.emoji)
+    ? p.emoji
+    : `<span style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--main);opacity:0.85;">${info.cycleDay}</span>`;
+  orb.innerHTML = `<div style="width:86px;height:86px;border-radius:50%;background:#1C3A35;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.3);">${orbGlyph}</div>`;
+  // Printing a phase name directly above "period 5 days late" contradicts
+  // itself, and luteal is the one phase that cannot be true this far out.
+  if (info.phaseUncertain) {
+    phaseName.textContent = 'Period Late';
+    dayCount.textContent = `Day ${info.cycleDay} · ${info.overdueBy} day${info.overdueBy === 1 ? '' : 's'} past due`;
+  } else {
+    phaseName.textContent = p.name;
+    dayCount.textContent = info.isOverdue
+      ? `Day ${info.cycleDay}${cycleDaySuffix(info)}`
+      : `Cycle Day ${info.cycleDay} of ${info.cycleLength}${cycleDaySuffix(info)}`;
+  }
 }
 
 // Everything the Today page shows once a period is late enough that the phase
@@ -2356,7 +2369,10 @@ function showInsight(phase) {
     tab.style.background = on ? pd.color : pd.light;
     tab.style.color = on ? '#fff' : pd.color;
     tab.style.fontWeight = on ? '500' : '300';
-    tab.textContent = `${pd.emoji ? pd.emoji + ' ' : ''}${pd.name}${info && info.phase === ph ? ' · now' : ''}`;
+    // No tab is "now" while the phase is uncertain; luteal would be the wrong
+    // one to point at, and there is no right one to move it to.
+    const isNow = info && !info.phaseUncertain && info.phase === ph;
+    tab.textContent = `${pd.emoji ? pd.emoji + ' ' : ''}${pd.name}${isNow ? ' · now' : ''}`;
   });
 
   const content = document.getElementById('insightContent');
