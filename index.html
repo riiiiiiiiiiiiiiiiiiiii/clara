@@ -210,34 +210,92 @@ body {
 .today-banner {
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 36px 40px;
-  margin-bottom: 28px;
-  position: relative;
-  overflow: hidden;
+  padding: 24px 24px 26px;
+  margin-bottom: 8px;
   transition: background 0.6s ease;
+  text-align: center;
 }
 
-.today-banner::before {
-  content: '';
-  position: absolute;
-  right: -40px;
-  top: -40px;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  opacity: 0.15;
-  transition: background 0.6s ease;
+/* Seven days around today, tinted by phase, the way Apple's timeline reads */
+.week-strip { display: flex; justify-content: center; gap: 6px; cursor: pointer; margin-bottom: 8px; }
+.week-day { width: 40px; font-size: 10px; letter-spacing: 0.5px; color: var(--muted); text-transform: uppercase; }
+.week-day b {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; margin: 5px auto 0; border-radius: 50%;
+  font-size: 13px; font-weight: 500; color: var(--text); background: var(--surface);
 }
+.week-day.period b { border: 1px solid var(--menstrual); color: var(--menstrual); }
+.week-day.today { color: var(--text); font-weight: 500; }
+.week-day.today b { color: #fff; }
+
+/* The cycle as one ring, split into the four phases, with today as a dot */
+.cycle-ring { position: relative; width: 240px; max-width: 100%; aspect-ratio: 1; margin: 0 auto; }
+.cycle-ring svg { width: 100%; height: 100%; display: block; }
+.cycle-ring-centre {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.cycle-ring-day { font-family: 'Cormorant Garamond', serif; font-size: 58px; font-weight: 300; line-height: 1; }
+.cycle-ring-next { font-size: 12px; color: var(--muted); margin-top: 4px; max-width: 150px; }
 
 .today-phase-name {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 25px;
+  font-size: 21px;
+  font-style: italic;
   font-weight: 400;
-  margin-bottom: 4px;
 }
 
-.today-day-count { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 12px; opacity: 0.7; }
-.today-tagline { font-size: 14px; line-height: 1.7; max-width: 480px; opacity: 0.85; }
+.today-day-count { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 2px; color: var(--muted); }
+.today-tagline {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 17px; line-height: 1.45; max-width: 420px; margin: 10px auto 0; opacity: 0.9;
+}
+
+.section-label {
+  font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted);
+  margin: 26px 2px 12px;
+}
+.section-hint { letter-spacing: 0.5px; text-transform: none; opacity: 0.7; }
+
+/* Story bubbles: the long reads, one tap away instead of on the page */
+.story-row { display: flex; gap: 14px; overflow-x: auto; padding: 7px 6px 6px; scrollbar-width: none; }
+.story-row::-webkit-scrollbar { display: none; }
+.story-btn {
+  flex: 0 0 auto; width: 72px; background: none; border: 0; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; line-height: 1.3; color: var(--text);
+}
+.story-btn .story-orb {
+  display: flex; align-items: center; justify-content: center;
+  width: 62px; height: 62px; margin: 0 auto 6px; border-radius: 50%;
+  font-size: 24px; border: 2px solid; transition: transform 0.15s;
+}
+.story-btn:hover .story-orb { transform: scale(1.05); }
+.story-btn.seen:not([aria-selected="true"]) .story-orb { border-color: var(--border) !important; }
+.story-btn[aria-selected="true"] .story-orb { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--tint); }
+.story-sheet { border-radius: 16px; padding: 22px 24px; margin-top: 10px; position: relative; }
+.story-sheet .insight-title { padding-right: 28px; }
+.story-close {
+  position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 50%;
+  border: 0; background: rgba(0,0,0,0.06); cursor: pointer; font-size: 15px; color: var(--text);
+}
+
+/* How you might feel: a word and a symbol each; tap for the sentence */
+.feel-tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.feel-tile {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 12px 4px 10px; text-align: center; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--text); line-height: 1.3;
+}
+.feel-tile span { display: block; font-size: 22px; margin-bottom: 4px; }
+.feel-tile[aria-pressed="true"] { border-color: var(--tint); }
+.feel-more { font-size: 13px; line-height: 1.6; padding: 12px 16px; border-radius: 12px; margin-top: 8px; }
+
+.log-today-btn {
+  display: block; width: 100%; max-width: 420px; margin: 28px auto 8px; height: 50px; border-radius: 25px;
+  border: 0; background: var(--secondary); color: #fff; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.3px;
+}
+.log-today-btn:hover { opacity: 0.92; }
 
 /* ─── HORMONE BARS ─── */
 .hormone-grid { display: flex; flex-direction: column; gap: 16px; }
@@ -268,6 +326,14 @@ body {
 }
 
 .hormone-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.hormone-card { padding: 18px 22px; }
+.hormone-card .hormone-grid { gap: 0; }
+.hormone-card .hormone-row { padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.hormone-card .hormone-row:last-child { border-bottom: 0; }
+.hormone-card .hormone-desc { display: none; font-size: 12px; }
+.hormone-card .hormone-row.open .hormone-desc { display: block; }
+.hormone-card .hormone-name::after { content: ' ›'; color: var(--muted); font-weight: 300; }
+.hormone-card .hormone-row.open .hormone-name::after { content: ' ⌄'; }
 
 /* ─── LOG FORM ─── */
 .log-date-display {
@@ -434,6 +500,25 @@ body {
 }
 
 .insight-body { font-size: 13px; line-height: 1.8; color: #2a1020; }
+
+/* Insight cards and hormone sections show their headline; the read opens on tap */
+details.insight-card { padding: 18px 24px; }
+details.insight-card > summary,
+details.h-section > summary { list-style: none; cursor: pointer; position: relative; padding-right: 30px; }
+details.insight-card > summary::-webkit-details-marker,
+details.h-section > summary::-webkit-details-marker { display: none; }
+details.insight-card > summary::after,
+details.h-section > summary::after {
+  content: '+'; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 24px; height: 24px; border-radius: 50%; line-height: 23px; text-align: center;
+  font-size: 16px; font-weight: 300; background: rgba(0,0,0,0.05); color: var(--tint, var(--secondary));
+}
+details[open].insight-card > summary::after,
+details[open].h-section > summary::after { content: '−'; }
+details.insight-card .insight-title { margin-bottom: 0; }
+details[open].insight-card .insight-body { margin-top: 12px; }
+details.h-section .h-section-title { margin-bottom: 0; }
+details[open].h-section .h-section-body { margin-top: 10px; }
 .insight-body strong { font-weight: 500; }
 
 /* ─── SETUP ─── */
@@ -796,8 +881,10 @@ body {
     padding: 14px !important;
   }
 
+  .feel-tiles { grid-template-columns: repeat(3, 1fr); }
+
   /* Alter ego: stack superpowers / handle-with-care */
-  #alterEgoContent [style*="grid-template-columns:1fr 1fr"] {
+  #storySheet [style*="grid-template-columns:1fr 1fr"] {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
@@ -949,31 +1036,40 @@ body {
 
       <div id="todayView">
 
+        <!-- The ring and week strip carry where you are; words only where a
+             picture can't. Everything longer sits behind a tap below. -->
         <div class="today-banner" id="todayBanner">
-          <div class="today-phase-name" id="todayPhaseName">Set up your cycle</div>
-          <div class="today-day-count" id="todayDayCount"></div>
-          <div class="today-tagline" id="todayTagline">Go to My Cycle to log your last period date and get insights on your cycle.</div>
-        </div>
-
-        <div class="grid-2" style="margin-bottom:20px;">
-          <div class="card">
-            <div class="card-title">Hormones Right Now</div>
-            <div class="card-subtitle" id="hormoneSubtitle">Set up your cycle to see hormone data</div>
-            <div class="hormone-grid" id="hormoneGrid"></div>
-            <div style="margin-top:14px;font-size:12px;">
-              <span onclick="openHormoneDeepDive()" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Read the hormone deep dive &rarr;</span>
+          <div class="week-strip" id="weekStrip" onclick="showPage('calendar')" title="Open the calendar"></div>
+          <div class="cycle-ring" id="cycleRing">
+            <svg viewBox="0 0 240 240" aria-hidden="true" id="cycleRingSvg"></svg>
+            <div class="cycle-ring-centre">
+              <div class="today-day-count" id="todayDayCount"></div>
+              <div class="cycle-ring-day" id="cycleRingDay"></div>
+              <div class="today-phase-name" id="todayPhaseName">Set up your cycle</div>
+              <div class="cycle-ring-next" id="cycleRingNext"></div>
             </div>
           </div>
-          <div class="card">
-            <div class="card-title">What to Expect</div>
-            <div class="card-subtitle">Body, mood & energy today</div>
-            <div id="expectList" style="font-size:13px;line-height:1.9;color:#1e2820;"></div>
-          </div>
+          <div class="today-tagline" id="todayTagline">Go to <span onclick="showPage('setup')" style="text-decoration:underline;cursor:pointer;">My Cycle</span> to log your last period date.</div>
         </div>
 
-        <!-- Alter Ego Card -->
-        <div class="card" id="alterEgoCard" style="display:none;position:relative;overflow:hidden;margin-bottom:28px;">
-          <div id="alterEgoContent"></div>
+        <div id="todayDetails" style="display:none;">
+          <div class="section-label">For you today</div>
+          <div class="story-row" id="storyRow" role="tablist"></div>
+          <div class="story-sheet" id="storySheet" role="tabpanel" hidden></div>
+
+          <div class="section-label">How you might feel</div>
+          <div class="feel-tiles" id="expectList"></div>
+          <div class="feel-more" id="feelMore" hidden></div>
+
+          <div class="section-label"><span id="hormoneSubtitle">Hormones</span> <span class="section-hint">tap one</span></div>
+          <div class="card hormone-card">
+            <div class="hormone-grid" id="hormoneGrid"></div>
+            <div style="margin-top:14px;font-size:12px;">
+              <span onclick="openHormoneDeepDive()" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Hormone deep dive &rarr;</span>
+            </div>
+          </div>
+
+          <button class="log-today-btn" onclick="showTodayTab('log')">+ Log today</button>
         </div>
 
         <!-- Fun stats -->
@@ -1549,6 +1645,29 @@ const PHASES = {
   },
 };
 
+// What the Today screen shows before anything is tapped. `feel` is a short
+// label for each PHASES[x].expect line, in the same order; the full sentence
+// opens on tap. `stories` gives each PHASES[x].insights entry an icon and a
+// bubble-sized name, also in order.
+const TODAY_META = {
+  menstrual: {
+    feel: ['Energy ↓', 'Sharp insight', 'Cramps', 'Cravings', 'Sensitive', 'Sleep off'],
+    stories: [['🌒', 'Hormone crash'], ['🧘', 'Go gentle'], ['🔮', 'Superpower'], ['🫖', 'What helps']],
+  },
+  follicular: {
+    feel: ['Energy ↑', 'Focus ↑', 'Social ↑', 'Strength ↑', 'Creative', 'Skin clear'],
+    stories: [['✨', 'Why you feel good'], ['🏋️', 'Train hard'], ['💡', 'Start things'], ['🤝', 'Reach out']],
+  },
+  ovulatory: {
+    feel: ['Articulate', 'Libido ↑', 'Strength peak', 'Confident', 'Empathic', 'Temp ↑'],
+    stories: [['🌕', 'Your peak'], ['🎤', 'Use it'], ['🏃', 'Personal bests'], ['💞', 'Open heart']],
+  },
+  luteal: {
+    feel: ['Energy ↓', 'Detail mode', 'Finish things', 'Warmer', 'Sensitive', 'Appetite ↑'],
+    stories: [['🌙', 'Why it feels different'], ['🩺', 'PMS or PMDD'], ['✂️', 'Finish, don\'t start'], ['🫖', 'What helps']],
+  },
+};
+
 // ─── UTILITIES ───
 // Local-time YYYY-MM-DD. Deliberately not toISOString(), which would shift the
 // date across midnight for anyone behind UTC.
@@ -1759,65 +1878,251 @@ function updateSidebar() {
   }
 }
 
+// ─── TODAY PAGE ───
+// Today leads with pictures: a ring for where you are in the cycle and a week
+// strip for the days around it. The long reads that used to fill the page are
+// still all here, behind story bubbles, feeling tiles and hormone rows that
+// open on tap.
+
+// The cycle as a ring of phase arcs, with today as a dot. A cycle that has run
+// past its expected length grows a thin grey overdue arc instead of wrapping round.
+function renderCycleRing(info) {
+  const svg = document.getElementById('cycleRingSvg');
+  const R = 100, C = 2 * Math.PI * R, GAP = 3;
+  const cl = info.cycleLength, pl = info.periodLength || 5;
+  const total = Math.max(cl, info.cycleDay);
+  const ov = getOvulationDay(cl, pl);
+  const segs = [
+    ['menstrual', 1, pl], ['follicular', pl + 1, ov - 1],
+    ['ovulatory', ov, ov + 1], ['luteal', ov + 2, cl],
+  ].filter(([, a, b]) => b >= a);
+  if (info.cycleDay > cl) segs.push(['overdue', cl + 1, info.cycleDay]);
+
+  const arc = (from, to, colour) => {
+    const len = Math.max((to - from + 1) / total * C - GAP, 1);
+    const offset = -((from - 1) / total * C);
+    return `<circle cx="120" cy="120" r="${R}" fill="none" stroke="${colour}" stroke-width="14"
+      stroke-linecap="round" stroke-dasharray="${len} ${C}" stroke-dashoffset="${offset}"
+      transform="rotate(-90 120 120)"/>`;
+  };
+
+  const current = info.phaseUncertain ? null : info.phase;
+  let html = segs.map(([ph, a, b]) => {
+    if (ph === 'overdue') {
+      // A thin grey arc, so the overdue stretch can't be read as a phase
+      const len = (b - a + 1) / total * C;
+      const offset = -((a - 1) / total * C);
+      return `<circle cx="120" cy="120" r="${R}" fill="none" stroke="var(--muted)" stroke-width="3"
+        stroke-dasharray="${len} ${C}" stroke-dashoffset="${offset}" transform="rotate(-90 120 120)" opacity="0.6"/>`;
+    }
+    const p = PHASES[ph];
+    return arc(a, b, ph === current ? p.color : p.mid);
+  }).join('');
+
+  const angle = ((info.cycleDay - 0.5) / total) * 2 * Math.PI - Math.PI / 2;
+  const x = 120 + R * Math.cos(angle), y = 120 + R * Math.sin(angle);
+  const dot = current ? PHASES[current].color : 'var(--secondary)';
+  html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12" fill="${dot}" stroke="var(--surface)" stroke-width="4"/>`;
+  svg.innerHTML = html;
+}
+
+// Seven days around today, tinted by phase, using the calendar's own reading
+function renderWeekStrip(info) {
+  const todayStr = today();
+  const base = parseDate(todayStr);
+  let html = '';
+  for (let i = -3; i <= 3; i++) {
+    const d = new Date(base);
+    d.setDate(d.getDate() + i);
+    const ds = toISODate(d);
+    const day = dayPhaseFor(ds, todayStr);
+    const isToday = i === 0;
+    // Past the expected length with the phase in doubt, the calendar's wrapped
+    // guess would contradict the ring, so those days stay untinted
+    const overdueDay = info.phaseUncertain && ds >= info.cycleStart &&
+      daysBetween(parseDate(info.cycleStart), d) + 1 > info.cycleLength;
+    const p = day.phase && !overdueDay ? PHASES[day.phase] : null;
+    let style = '';
+    if (isToday) {
+      style = `background:${info.phaseUncertain || !p ? 'var(--secondary)' : p.color};`;
+    } else if (p) {
+      // Mid tint, since the card behind is already the light one
+      style = day.predicted ? `background:var(--surface);border:1px dashed ${p.color};` : `background:${p.mid};`;
+    }
+    const label = isToday ? 'Today' : d.toLocaleDateString('en-GB', { weekday: 'short' });
+    html += `<div class="week-day${isToday ? ' today' : ''}${day.periodDay && !isToday ? ' period' : ''}">${label}<b style="${style}">${d.getDate()}</b></div>`;
+  }
+  document.getElementById('weekStrip').innerHTML = html;
+}
+
+// What the ring says under the day number
+function nextEventText(info) {
+  if (info.isLate) return `${info.overdueBy} day${info.overdueBy === 1 ? '' : 's'} late`;
+  if (info.isDue) return 'Period due around now';
+  if (info.phase === 'menstrual') return `Period day ${info.cycleDay}`;
+  if (info.daysToOv > 0 && info.daysToOv <= 5) return `Ovulation in ${info.daysToOv} day${info.daysToOv === 1 ? '' : 's'}`;
+  if (info.daysUntilNext === 1) return 'Period tomorrow';
+  return `Period in ${info.daysUntilNext} days`;
+}
+
+// ─── Story bubbles ───
+// Each story is { icon, label, tint, light, mid, html }. Opening one shows it
+// in a sheet under the row; opening it again closes it.
+let todayStories = [];
+let openStoryIndex = -1;
+const seenStories = new Set();
+
+function renderStories(stories) {
+  todayStories = stories;
+  openStoryIndex = -1;
+  document.getElementById('storySheet').hidden = true;
+  document.getElementById('storyRow').innerHTML = stories.map((s, i) => `
+    <button class="story-btn${seenStories.has(s.label) ? ' seen' : ''}" role="tab" aria-selected="false"
+            style="--tint:${s.tint};" onclick="openStory(${i})">
+      <span class="story-orb" style="border-color:${s.tint};background:${s.light};">${s.icon}</span>${s.label}
+    </button>`).join('');
+}
+
+function openStory(i) {
+  const sheet = document.getElementById('storySheet');
+  const buttons = document.querySelectorAll('#storyRow .story-btn');
+  if (openStoryIndex === i) { closeStory(); return; }
+  openStoryIndex = i;
+  const s = todayStories[i];
+  seenStories.add(s.label);
+  buttons.forEach((b, j) => {
+    b.setAttribute('aria-selected', j === i ? 'true' : 'false');
+    if (j === i) b.classList.add('seen');
+  });
+  sheet.style.background = s.light;
+  sheet.style.border = `1px solid ${s.mid}`;
+  sheet.innerHTML = `<button class="story-close" onclick="closeStory()" aria-label="Close">✕</button>${s.html}`;
+  sheet.hidden = false;
+}
+
+function closeStory() {
+  openStoryIndex = -1;
+  document.getElementById('storySheet').hidden = true;
+  document.querySelectorAll('#storyRow .story-btn').forEach(b => b.setAttribute('aria-selected', 'false'));
+}
+
+function storyBody(badge, title, body, p) {
+  return `
+    <div class="insight-badge" style="background:${p.mid};color:${p.color};">${badge}</div>
+    <div class="insight-title">${title}</div>
+    <div class="insight-body">${body}</div>`;
+}
+
+// ─── How you might feel ───
+// tiles: [{ icon, label, text }]. The sentence opens under the grid on tap.
+let feelTiles = [];
+function renderFeelTiles(tiles, p) {
+  feelTiles = tiles;
+  const more = document.getElementById('feelMore');
+  more.hidden = true;
+  more.style.background = p.light;
+  document.getElementById('expectList').innerHTML = tiles.map((t, i) => `
+    <button class="feel-tile" style="--tint:${p.color};" aria-pressed="false" onclick="toggleFeel(${i})">
+      <span aria-hidden="true">${t.icon}</span>${t.label}
+    </button>`).join('');
+}
+
+function toggleFeel(i) {
+  const tiles = document.querySelectorAll('#expectList .feel-tile');
+  const more = document.getElementById('feelMore');
+  const wasOpen = tiles[i].getAttribute('aria-pressed') === 'true';
+  tiles.forEach(t => t.setAttribute('aria-pressed', 'false'));
+  if (wasOpen) { more.hidden = true; return; }
+  tiles[i].setAttribute('aria-pressed', 'true');
+  more.textContent = feelTiles[i].text;
+  more.hidden = false;
+}
+
+// "⚡ Energy is building..." → { icon: '⚡', text: 'Energy is building...' }
+function splitEmojiLine(line) {
+  const at = line.indexOf(' ');
+  return at > 0 ? { icon: line.slice(0, at), text: line.slice(at + 1) } : { icon: '•', text: line };
+}
+
+function toggleHormoneRow(row) {
+  row.classList.toggle('open');
+}
+
 // Everything the Today page shows once a period is late enough that the phase
 // is genuinely unknown. The hormone bars are predictions keyed off a phase, so
 // with the phase in doubt they are withdrawn rather than left asserting numbers.
 function renderLateToday(info) {
   const d = info.overdueBy;
   const dayWord = `${d} day${d === 1 ? '' : 's'}`;
+  const tone = { color: 'var(--secondary)', light: 'var(--menstrual-light)', mid: 'var(--menstrual-mid)' };
 
   document.getElementById('todayBanner').style.background = '#f0ede8';
   const name = document.getElementById('todayPhaseName');
   name.style.color = 'var(--secondary)';
-  name.textContent = 'Period Late';
-  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay}${cycleDaySuffix(info)}`;
-  document.getElementById('todayTagline').textContent =
-    `Your period is ${dayWord} past its predicted date, which is beyond the usual spread of your logged cycles. Clara has paused its phase and hormone estimates until your next period is logged.`;
+  name.textContent = 'Period late';
+  document.getElementById('todayTagline').textContent = 'Phase and hormone estimates are paused until your next period is logged.';
 
-  document.getElementById('hormoneSubtitle').textContent = 'Paused while the phase is uncertain';
+  document.getElementById('hormoneSubtitle').textContent = 'Hormones paused';
   document.getElementById('hormoneGrid').innerHTML = `
-    <div style="font-size:13px;line-height:1.8;color:#1e2820;">
-      <p style="margin:0 0 12px;">Clara estimates hormones from where you are in a predicted cycle. You are ${dayWord} past that prediction, so there is no longer a phase it can key them to.</p>
-      <p style="margin:0 0 12px;"><strong>The likeliest explanation is later ovulation.</strong> The luteal phase is held to roughly 14 days by the lifespan of the corpus luteum and cannot stretch to cover a long delay. Almost always it is the follicular phase that ran long instead, which would mean progesterone is still low and your fertile window is ahead of you rather than behind you. Stress, illness, travel, heavy training, and undereating all commonly push ovulation later.</p>
-      <p style="margin:0 0 12px;">Less often a cycle passes without ovulating at all. No corpus luteum forms, no progesterone rise happens, and the bleed that eventually arrives is driven by oestrogen alone — often later, heavier, or more erratic than usual.</p>
-      ${info.isVeryLate
-        ? `<p style="margin:0;padding:12px 14px;border-radius:10px;background:var(--menstrual-light);border:1px solid var(--menstrual-mid);"><strong>More than three weeks late.</strong> Clara cannot tell these apart from dates alone. A pregnancy test, or a conversation with a clinician, is the reliable next step.</p>`
-        : `<p style="margin:0;">Logging your period the day it starts will re-anchor all of this.</p>`}
+    <div style="font-size:13px;line-height:1.7;color:var(--text);">
+      Clara estimates hormones from where you are in a predicted cycle. You are ${dayWord} past that, so there is no phase to key them to.
     </div>`;
 
-  document.getElementById('expectList').innerHTML = [
-    '🩸 Log your period as soon as it starts; that re-anchors every prediction',
-    '🌱 If ovulation ran late, fertile signs (clear stretchy mucus, rising libido) may still be ahead',
-    '😮‍💨 Stress, illness, travel, heavy training, and undereating all delay ovulation',
-    '📊 The more period dates you log, the wider or tighter Clara makes this window',
-    info.isVeryLate
-      ? '🧪 Three weeks past due: worth a pregnancy test or a clinician'
-      : '🧘 A late cycle on its own is common and usually resolves by itself',
-  ].map(e => `<div>${e}</div>`).join('');
+  const stories = [
+    { icon: '🕰️', label: 'Why it\'s late', ...tone, tint: tone.color, html: storyBody('Most likely', 'Ovulation came later', `
+        <p style="margin:0 0 12px;">The luteal phase is held to roughly 14 days by the lifespan of the corpus luteum and cannot stretch to cover a long delay. Almost always it is the follicular phase that ran long instead, which would mean progesterone is still low and your fertile window is ahead of you rather than behind you. Stress, illness, travel, heavy training, and undereating all commonly push ovulation later.</p>
+        <p style="margin:0;">Less often a cycle passes without ovulating at all. No corpus luteum forms, no progesterone rise happens, and the bleed that eventually arrives is driven by oestrogen alone — often later, heavier, or more erratic than usual.</p>`, tone) },
+    { icon: '🩸', label: 'What to do', ...tone, tint: tone.color, html: storyBody('Next step', info.isVeryLate ? 'Worth checking' : 'Log the day it starts', info.isVeryLate
+        ? `<p style="margin:0;"><strong>More than three weeks late.</strong> Clara cannot tell these apart from dates alone. A pregnancy test, or a conversation with a clinician, is the reliable next step.</p>`
+        : `<p style="margin:0;">Logging your period the day it starts re-anchors every prediction. A late cycle on its own is common and usually resolves by itself.</p>`, tone) },
+  ];
+  renderStories(stories);
 
-  // The alter ego is phase flavour. With the phase unknown there is nothing
-  // honest to show, so it stays hidden.
-  document.getElementById('alterEgoCard').style.display = 'none';
+  renderFeelTiles([
+    { icon: '🩸', label: 'Log it', text: 'Log your period as soon as it starts; that re-anchors every prediction.' },
+    { icon: '🌱', label: 'Fertile ahead?', text: 'If ovulation ran late, fertile signs (clear stretchy mucus, rising libido) may still be ahead.' },
+    { icon: '😮‍💨', label: 'Common causes', text: 'Stress, illness, travel, heavy training, and undereating all delay ovulation.' },
+    { icon: '📊', label: 'More data', text: 'The more period dates you log, the wider or tighter Clara makes this window.' },
+    info.isVeryLate
+      ? { icon: '🧪', label: 'Test', text: 'Three weeks past due: worth a pregnancy test or a clinician.' }
+      : { icon: '🧘', label: 'Usually fine', text: 'A late cycle on its own is common and usually resolves by itself.' },
+  ], tone);
 }
 
-// ─── TODAY PAGE ───
 function updateToday() {
-  const now = new Date();
-  const hour = now.getHours();
-
   const info = getCurrentCycleInfo();
   const banner = document.getElementById('todayBanner');
+  const details = document.getElementById('todayDetails');
 
   // Achievements & patterns: these run off logs, not cycle setup
   document.getElementById('funStatsRow').style.display = 'block';
   renderFunStats();
 
   if (!info) {
+    // An empty ring with the prompt inside, waiting for a first period date
     banner.style.background = '#f0ede8';
+    details.style.display = 'none';
+    document.getElementById('weekStrip').innerHTML = '';
+    document.getElementById('cycleRingSvg').innerHTML =
+      '<circle cx="120" cy="120" r="100" fill="none" stroke="var(--border)" stroke-width="14"/>';
+    document.getElementById('todayDayCount').textContent = '';
+    document.getElementById('cycleRingDay').textContent = '';
+    const name = document.getElementById('todayPhaseName');
+    name.style.color = 'var(--secondary)';
+    name.textContent = 'Set up your cycle';
+    document.getElementById('cycleRingNext').textContent = '';
+    document.getElementById('todayTagline').innerHTML =
+      'Go to <span onclick="showPage(\'setup\')" style="text-decoration:underline;cursor:pointer;">My Cycle</span> to log your last period date.';
     return;
   }
+  details.style.display = '';
 
-  const p = PHASES[info.phase];
+  renderWeekStrip(info);
+  renderCycleRing(info);
+  document.getElementById('todayDayCount').textContent =
+    info.isPredicted && !info.isOverdue ? 'Cycle day · est.' : 'Cycle day';
+  document.getElementById('cycleRingDay').textContent = info.cycleDay;
+  document.getElementById('cycleRingNext').textContent = nextEventText(info);
 
   // Past the grace window Clara no longer knows which phase this is, so it says
   // so instead of dressing a guess up as a reading.
@@ -1826,20 +2131,23 @@ function updateToday() {
     return;
   }
 
+  const p = PHASES[info.phase];
+  const meta = TODAY_META[info.phase];
+
   banner.style.background = p.light;
   document.getElementById('todayPhaseName').style.color = p.color;
-  document.getElementById('todayPhaseName').textContent = `${p.name} Phase`;
-  document.getElementById('todayDayCount').textContent = `Cycle Day ${info.cycleDay}${cycleDaySuffix(info)}`;
+  document.getElementById('todayPhaseName').textContent = p.name;
   document.getElementById('todayTagline').textContent = p.tagline;
 
   // Hormones. Levels and labels come from HORMONE_DATA, the same table the
-  // Insights deep dive reads, so the two screens can never disagree.
-  const grid = document.getElementById('hormoneGrid');
-  document.getElementById('hormoneSubtitle').textContent = `${p.name} phase: what\'s happening inside`;
-  grid.innerHTML = p.hormones.map(h => {
+  // Insights deep dive reads, so the two screens can never disagree. The
+  // explanation for each opens on tap.
+  document.getElementById('hormoneSubtitle').textContent = 'Hormones';
+  document.getElementById('hormoneGrid').innerHTML = p.hormones.map(h => {
     const lvl = hormoneLevelFor(h.key, info.phase);
     return `
-    <div class="hormone-row">
+    <div class="hormone-row" onclick="toggleHormoneRow(this)" role="button" tabindex="0"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleHormoneRow(this);}">
       <div class="hormone-label">
         <span class="hormone-name">${HORMONE_DATA[h.key].name}</span>
         <span class="hormone-level">${lvl.label}</span>
@@ -1851,11 +2159,22 @@ function updateToday() {
     </div>`;
   }).join('');
 
-  // Expect
-  document.getElementById('expectList').innerHTML = p.expect.map(e => `<div>${e}</div>`).join('');
+  renderFeelTiles(p.expect.map((line, i) => {
+    const { icon, text } = splitEmojiLine(line);
+    return { icon, label: meta.feel[i] || '', text };
+  }), p);
 
-  // Phase alter ego + what's coming next
-  renderAlterEgo(info.phase);
+  const stories = p.insights.map((ins, i) => ({
+    icon: meta.stories[i][0], label: meta.stories[i][1],
+    tint: p.color, light: p.light, mid: p.mid,
+    html: storyBody(ins.badge, ins.title, ins.body, p),
+  }));
+  stories.push({
+    icon: '🎭', label: p.alterEgo,
+    tint: 'var(--accent)', light: 'var(--menstrual-light)', mid: 'var(--menstrual-mid)',
+    html: alterEgoHTML(info.phase),
+  });
+  renderStories(stories);
 }
 
 // ─── LOG PAGE ───
@@ -2203,6 +2522,44 @@ function initPeriodInputs() {
   });
 }
 
+// Which phase a calendar date falls in, whether that is a prediction, and
+// whether a period was actually logged on it. Shared by the calendar and the
+// Today week strip, and built on getCycleStartFor() like getCurrentCycleInfo(),
+// so no two screens can disagree about a day.
+function dayPhaseFor(dateStr, todayStr) {
+  const cl = state.cycleLength || 28;
+  const pl = state.periodLength || 5;
+  const future = dateStr > todayStr;
+  let phase = null;
+
+  // Strategy 1: the date falls within a LOGGED cycle (a period start on/before it)
+  const cycleStart = getCycleStartFor(dateStr);
+  if (cycleStart) {
+    const cd = daysBetween(parseDate(cycleStart), parseDate(dateStr)) + 1;
+    if (cd >= 1 && cd <= cl) {
+      phase = getPhaseForDay(cd, cl, pl);
+    } else if (cd > cl) {
+      // Falls into a predicted future cycle beyond the last logged start
+      phase = getPhaseForDay(((cd - 1) % cl) + 1, cl, pl);
+    }
+  } else if (state.lastPeriodDate) {
+    // Strategy 2: nothing logged on/before, so project forward from lastPeriodDate
+    let cd = daysBetween(parseDate(state.lastPeriodDate), parseDate(dateStr)) + 1;
+    if (cd >= 1) {
+      while (cd > cl) cd -= cl;
+      phase = getPhaseForDay(cd, cl, pl);
+    }
+  }
+
+  // Days a period was actually logged on (the start, plus the whole range when
+  // an end date was entered) are recorded rather than calculated, so they never
+  // render as predicted. Bleeding Clara worked out rather than was told about is
+  // an estimate, whether it sits behind us or ahead.
+  const periodDay = isLoggedPeriodDay(dateStr);
+  const predicted = !periodDay && !!phase && (future || phase === 'menstrual');
+  return { phase, predicted, periodDay };
+}
+
 function renderCalendar() {
   const y = calViewDate.getFullYear();
   const m = calViewDate.getMonth();
@@ -2219,64 +2576,16 @@ function renderCalendar() {
 
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const todayStr = today();
-  const info = getCurrentCycleInfo();
-
-  // Which logged cycle a date belongs to: shared with getCurrentCycleInfo()
-  // so the calendar and the Today page can never disagree
-  const getCycleStartForDate = getCycleStartFor;
-
-  const isFutureDate = (dateStr) => dateStr > todayStr;
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday = dateStr === todayStr;
     let cls = 'cal-day';
-    if (isToday) cls += ' today';
+    if (dateStr === todayStr) cls += ' today';
 
-    const cl = state.cycleLength || 28;
-    const pl = state.periodLength || 5;
-    const isPredicted = isFutureDate(dateStr);
-
-    // ── STRATEGY 1: date falls within a LOGGED cycle (we have a period start on/before it) ──
-    const cycleStart = getCycleStartForDate(dateStr);
-    if (cycleStart) {
-      const cd = daysBetween(parseDate(cycleStart), parseDate(dateStr)) + 1;
-      if (cd >= 1 && cd <= cl) {
-        const phase = getPhaseForDay(cd, cl, pl);
-        cls += ` phase-${phase}`;
-        if (isPredicted) cls += ' predicted';
-      } else if (cd > cl) {
-        // Falls into a predicted future cycle beyond last logged start
-        // Use lastPeriodDate-based calculation for future
-        const futureCd = ((cd - 1) % cl) + 1;
-        const phase = getPhaseForDay(futureCd, cl, pl);
-        cls += ` phase-${phase}`;
-        if (isPredicted) cls += ' predicted';
-      }
-    } else if (state.lastPeriodDate) {
-      // ── STRATEGY 2: no logged period start on/before, use lastPeriodDate to project forward ──
-      const start = parseDate(state.lastPeriodDate);
-      const thisDate = parseDate(dateStr);
-      let cd = daysBetween(start, thisDate) + 1;
-      if (cd >= 1) {
-        while (cd > cl) cd -= cl;
-        const phase = getPhaseForDay(cd, cl, pl);
-        cls += ` phase-${phase}`;
-        if (isPredicted) cls += ' predicted';
-      }
-    }
-
-    // ── Mark days a period was actually logged on: the start, plus the whole
-    //    range whenever an end date was entered. These are recorded rather than
-    //    calculated, so they never render as predicted.
-    if (isLoggedPeriodDay(dateStr)) {
-      cls = cls.replace(' predicted', '');
-      cls += ' period-day';
-    } else if (cls.includes('phase-menstrual') && !cls.includes('predicted')) {
-      // Bleeding Clara worked out rather than was told about is an estimate,
-      // whether it sits behind us or ahead
-      cls += ' predicted';
-    }
+    const day = dayPhaseFor(dateStr, todayStr);
+    if (day.phase) cls += ` phase-${day.phase}`;
+    if (day.predicted) cls += ' predicted';
+    if (day.periodDay) cls += ' period-day';
 
     const hasLog = state.logs[dateStr];
     html += `<div class="${cls}" title="${dateStr}">${d}${hasLog ? '<div style="position:absolute;bottom:2px;right:2px;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0.4;"></div>' : ''}</div>`;
@@ -2383,11 +2692,13 @@ function showInsight(phase) {
       ${phaseDayRange(phase) ? `<div style="margin-top:14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:${p.color};opacity:0.75;">${phaseDayRange(phase)} of your cycle &middot; approx</div>` : ''}
     </div>
     ${p.insights.map(ins => `
-      <div class="insight-card" style="background:${p.light};border:1px solid ${p.mid};">
-        <div class="insight-badge" style="background:${p.mid};color:${p.color};">${ins.badge}</div>
-        <div class="insight-title">${ins.title}</div>
+      <details class="insight-card" style="background:${p.light};border:1px solid ${p.mid};--tint:${p.color};">
+        <summary>
+          <div class="insight-badge" style="background:${p.mid};color:${p.color};">${ins.badge}</div>
+          <div class="insight-title">${ins.title}</div>
+        </summary>
         <div class="insight-body">${ins.body}</div>
-      </div>
+      </details>
     `).join('')}
   `;
 
@@ -3779,10 +4090,10 @@ function showHormoneCard(key) {
   `).join('');
 
   const sectionsHTML = h.sections.map(s => `
-    <div class="h-section${s.full ? ' h-full' : ''}">
-      <div class="h-section-title">${s.title}</div>
+    <details class="h-section${s.full ? ' h-full' : ''}">
+      <summary class="h-section-title">${s.title}</summary>
       <div class="h-section-body">${s.body}</div>
-    </div>
+    </details>
   `).join('');
 
   document.getElementById('hormoneCardContent').innerHTML = `
@@ -3826,18 +4137,14 @@ function showHormoneCard(key) {
 
 
 
-function renderAlterEgo(phase) {
+// The alter ego, as the content of its Today story bubble
+function alterEgoHTML(phase) {
   const p = PHASES[phase];
-  if (!p || !p.alterEgo) return;
-  const card = document.getElementById('alterEgoCard');
-  card.style.display = 'block';
-  card.style.background = p.light;
-  card.style.borderColor = p.mid || 'var(--border)';
-
+  if (!p || !p.alterEgo) return '';
   const perks = p.alterEgoPerks.map(x => `<li style="margin-bottom:4px;">${x}</li>`).join('');
   const warnings = p.alterEgoWarnings.map(x => `<li style="margin-bottom:4px;opacity:0.7;">${x}</li>`).join('');
 
-  document.getElementById('alterEgoContent').innerHTML = `
+  return `
     <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
       <div style="flex:1;min-width:200px;">
         <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Your phase alter ego</div>
