@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Clara">
-<meta name="theme-color" content="#F8F4EE">
+<meta name="theme-color" content="#A63D52">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -245,19 +245,19 @@ body {
 .section-hint { letter-spacing: 0.5px; text-transform: none; opacity: 0.7; }
 
 /* Story bubbles: the long reads, one tap away instead of on the page */
-.story-row { display: flex; align-items: flex-start; gap: 14px; overflow-x: auto; padding: 7px 6px 6px; scrollbar-width: none; }
+.story-row { display: flex; align-items: flex-start; gap: 8px; overflow-x: auto; padding: 7px 4px 6px; scrollbar-width: none; }
 /* Auto margins centre the row yet still let it scroll when it overflows */
 .story-btn:first-child { margin-left: auto; }
 .story-btn:last-child { margin-right: auto; }
 .story-row::-webkit-scrollbar { display: none; }
 .story-btn {
-  flex: 0 0 auto; width: 72px; background: none; border: 0; cursor: pointer;
+  flex: 0 0 auto; width: 60px; padding: 0; background: none; border: 0; cursor: pointer;
   font-family: 'DM Sans', sans-serif; font-size: 11px; line-height: 1.3; color: var(--text);
 }
 .story-btn .story-orb {
   display: flex; align-items: center; justify-content: center;
-  width: 62px; height: 62px; margin: 0 auto 6px; border-radius: 50%;
-  font-size: 24px; border: 2px solid; transition: transform 0.15s;
+  width: 54px; height: 54px; margin: 0 auto 6px; border-radius: 50%;
+  font-size: 22px; border: 2px solid; transition: transform 0.15s;
 }
 .story-btn:hover .story-orb { transform: scale(1.05); }
 .story-btn.seen:not([aria-selected="true"]) .story-orb { border-color: var(--border) !important; }
@@ -1077,7 +1077,7 @@ details[open].h-section .h-section-body { margin-top: 10px; }
     padding-bottom: max(80px, env(safe-area-inset-bottom));
   }
   .sidebar {
-    padding-top: max(16px, env(safe-area-inset-top));
+    padding-top: max(16px, calc(env(safe-area-inset-top) + 10px));
   }
 }
 @media (max-width: 900px) {
@@ -1148,7 +1148,7 @@ details[open].h-section .h-section-body { margin-top: 10px; }
           <div class="card hormone-card">
             <div class="hormone-grid" id="hormoneGrid"></div>
             <div style="margin-top:14px;font-size:12px;">
-              <span onclick="openHormoneDeepDive()" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">Hormone deep dive &rarr;</span>
+              <span onclick="openHormoneDeepDive()" style="color:var(--secondary);cursor:pointer;text-decoration:underline;">All hormones &rarr;</span>
             </div>
           </div>
 
@@ -2120,10 +2120,14 @@ function updateToday() {
   document.getElementById('todayPhaseName').textContent = p.name;
 
   // Hormones. Levels and labels come from HORMONE_DATA, the same table the
-  // Insights deep dive reads, so the two screens can never disagree. The
-  // explanation for each opens on tap.
+  // Insights deep dive reads, so the two screens can never disagree. Today
+  // shows only the three highest this phase; the rest are a tap away in the
+  // deep dive, and each one's explanation opens on tap.
   document.getElementById('hormoneSubtitle').textContent = 'Hormones';
-  document.getElementById('hormoneGrid').innerHTML = p.hormones.map(h => {
+  const leading = [...p.hormones]
+    .sort((a, b) => hormoneLevelFor(b.key, info.phase).pct - hormoneLevelFor(a.key, info.phase).pct)
+    .slice(0, 3);
+  document.getElementById('hormoneGrid').innerHTML = leading.map(h => {
     const lvl = hormoneLevelFor(h.key, info.phase);
     return `
     <div class="hormone-row" onclick="toggleHormoneRow(this)" role="button" tabindex="0"
@@ -2166,7 +2170,7 @@ let showAllSymptoms = false;
 const SYMPTOMS = [
   'Cramps', 'Bloating', 'Headache', 'Breast tenderness', 'Back pain', 'Acne',
   'Food cravings', 'Brain fog', 'Heightened senses', 'High libido', 'Fatigue',
-  'Anxiety', 'Irritability', 'Motivation spike', 'Vivid dreams',
+  'Anxious', 'Irritability', 'Motivation spike', 'Vivid dreams',
 ];
 const SYMPTOM_SHORTLIST = 6;
 const ENERGY_LEVELS = ['Very low', 'Low', 'Okay', 'Good', 'High'];
@@ -3072,6 +3076,11 @@ function applyLoaded(loaded) {
   // Logs: merge so we never lose entries
   if (loaded.logs && typeof loaded.logs === 'object') {
     state.logs = { ...loaded.logs };
+    // The "Anxiety" symptom is now "Anxious"; rename it in older entries so
+    // both don't show up as separate symptoms
+    Object.values(state.logs).forEach(l => {
+      if (Array.isArray(l.symptoms)) l.symptoms = l.symptoms.map(x => x === 'Anxiety' ? 'Anxious' : x);
+    });
   }
 
   // Periods array (new structure)
