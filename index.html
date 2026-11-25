@@ -207,7 +207,7 @@ body {
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
 
 /* ─── TODAY CARD ─── */
-/* Today is one narrow centred column with no card around the ring */
+/* Today is one narrow centred column with no card around the phase bar */
 #todayView { max-width: 560px; margin: 0 auto; text-align: center; }
 .today-banner { padding: 0; margin-bottom: 8px; }
 
@@ -223,15 +223,18 @@ body {
 .week-day.today { color: var(--text); font-weight: 500; }
 .week-day.today b { color: #fff; }
 
-/* The cycle as one ring, split into the four phases, with today as a dot */
-.cycle-ring { position: relative; width: 240px; max-width: 100%; aspect-ratio: 1; margin: 0 auto; }
-.cycle-ring svg { width: 100%; height: 100%; display: block; }
-.cycle-ring-centre {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+/* The cycle as one thin bar split into the four phases, with today as a dot */
+.cycle-day { font-family: 'Cormorant Garamond', serif; font-size: 40px; font-weight: 300; line-height: 1; }
+.phase-bar { position: relative; display: flex; gap: 3px; height: 6px; margin: 18px 8px 8px; }
+.phase-bar i { border-radius: 3px; min-width: 2px; }
+.phase-bar i.overdue { height: 2px; margin-top: 2px; background: var(--muted); opacity: 0.6; }
+.phase-bar-dot {
+  position: absolute; top: 50%; width: 18px; height: 18px; border-radius: 50%;
+  transform: translate(-50%, -50%); border: 3px solid var(--bg);
 }
-.cycle-ring-day { font-family: 'Cormorant Garamond', serif; font-size: 58px; font-weight: 300; line-height: 1; }
-.cycle-ring-next { font-size: 12px; color: var(--muted); margin-top: 4px; max-width: 150px; }
+.phase-bar-labels { display: flex; justify-content: space-between; gap: 12px; margin: 0 8px; font-size: 12px; color: var(--muted); }
+.phase-bar-labels span:only-child { margin: 0 auto; }
+.today-banner .week-strip { margin: 22px 0 0; }
 
 .today-phase-name {
   font-family: 'Cormorant Garamond', serif;
@@ -240,7 +243,7 @@ body {
   font-weight: 400;
 }
 
-.today-day-count { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 2px; color: var(--muted); }
+.today-day-count { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 4px; color: var(--muted); }
 .today-tagline {
   font-family: 'Cormorant Garamond', serif; font-style: italic;
   font-size: 17px; line-height: 1.45; max-width: 420px; margin: 10px auto 0; opacity: 0.9;
@@ -1040,19 +1043,15 @@ details[open].h-section .h-section-body { margin-top: 10px; }
 
       <div id="todayView">
 
-        <!-- The ring and week strip carry where you are; words only where a
-             picture can't. Everything longer sits behind a tap below. -->
+        <!-- The phase bar and week strip carry where you are; words only where
+             a picture can't. Everything longer sits behind a tap below. -->
         <div class="today-banner" id="todayBanner">
+          <div class="today-day-count" id="todayDayCount"></div>
+          <div class="cycle-day" id="cycleDay"></div>
+          <div class="today-phase-name" id="todayPhaseName">Set up your cycle</div>
+          <div class="phase-bar" id="phaseBar" aria-hidden="true"></div>
+          <div class="phase-bar-labels" id="phaseBarLabels"></div>
           <div class="week-strip" id="weekStrip" onclick="showPage('calendar')" title="Open the calendar"></div>
-          <div class="cycle-ring" id="cycleRing">
-            <svg viewBox="0 0 240 240" aria-hidden="true" id="cycleRingSvg"></svg>
-            <div class="cycle-ring-centre">
-              <div class="today-day-count" id="todayDayCount"></div>
-              <div class="cycle-ring-day" id="cycleRingDay"></div>
-              <div class="today-phase-name" id="todayPhaseName">Set up your cycle</div>
-              <div class="cycle-ring-next" id="cycleRingNext"></div>
-            </div>
-          </div>
           <div class="today-tagline" id="todayTagline">Go to <span onclick="showPage('setup')" style="text-decoration:underline;cursor:pointer;">My Cycle</span> to log your last period date.</div>
         </div>
 
@@ -1882,16 +1881,14 @@ function updateSidebar() {
 }
 
 // ─── TODAY PAGE ───
-// Today leads with pictures: a ring for where you are in the cycle and a week
+// Today leads with pictures: a phase bar for where you are in the cycle and a week
 // strip for the days around it. The long reads that used to fill the page are
 // still all here, behind story bubbles, feeling tiles and hormone rows that
 // open on tap.
 
-// The cycle as a ring of phase arcs, with today as a dot. A cycle that has run
-// past its expected length grows a thin grey overdue arc instead of wrapping round.
-function renderCycleRing(info) {
-  const svg = document.getElementById('cycleRingSvg');
-  const R = 100, C = 2 * Math.PI * R, GAP = 3;
+// The cycle as a bar of phase segments, with today as a dot. A cycle that has
+// run past its expected length grows a thin grey overdue stretch at the end.
+function renderPhaseBar(info) {
   const cl = info.cycleLength, pl = info.periodLength || 5;
   const total = Math.max(cl, info.cycleDay);
   const ov = getOvulationDay(cl, pl);
@@ -1901,32 +1898,18 @@ function renderCycleRing(info) {
   ].filter(([, a, b]) => b >= a);
   if (info.cycleDay > cl) segs.push(['overdue', cl + 1, info.cycleDay]);
 
-  const arc = (from, to, colour) => {
-    const len = Math.max((to - from + 1) / total * C - GAP, 1);
-    const offset = -((from - 1) / total * C);
-    return `<circle cx="120" cy="120" r="${R}" fill="none" stroke="${colour}" stroke-width="14"
-      stroke-linecap="round" stroke-dasharray="${len} ${C}" stroke-dashoffset="${offset}"
-      transform="rotate(-90 120 120)"/>`;
-  };
-
   const current = info.phaseUncertain ? null : info.phase;
   let html = segs.map(([ph, a, b]) => {
-    if (ph === 'overdue') {
-      // A thin grey arc, so the overdue stretch can't be read as a phase
-      const len = (b - a + 1) / total * C;
-      const offset = -((a - 1) / total * C);
-      return `<circle cx="120" cy="120" r="${R}" fill="none" stroke="var(--muted)" stroke-width="3"
-        stroke-dasharray="${len} ${C}" stroke-dashoffset="${offset}" transform="rotate(-90 120 120)" opacity="0.6"/>`;
-    }
+    const grow = `flex:${b - a + 1}`;
+    if (ph === 'overdue') return `<i class="overdue" style="${grow}"></i>`;
     const p = PHASES[ph];
-    return arc(a, b, ph === current ? p.color : p.mid);
+    return `<i style="${grow};background:${ph === current ? p.color : p.mid}"></i>`;
   }).join('');
 
-  const angle = ((info.cycleDay - 0.5) / total) * 2 * Math.PI - Math.PI / 2;
-  const x = 120 + R * Math.cos(angle), y = 120 + R * Math.sin(angle);
   const dot = current ? PHASES[current].color : 'var(--secondary)';
-  html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12" fill="${dot}" stroke="var(--surface)" stroke-width="4"/>`;
-  svg.innerHTML = html;
+  const at = ((info.cycleDay - 0.5) / total) * 100;
+  html += `<span class="phase-bar-dot" style="left:${at.toFixed(1)}%;background:${dot}"></span>`;
+  document.getElementById('phaseBar').innerHTML = html;
 }
 
 // Seven days around today, tinted by phase, using the calendar's own reading
@@ -1941,7 +1924,7 @@ function renderWeekStrip(info) {
     const day = dayPhaseFor(ds, todayStr);
     const isToday = i === 0;
     // Past the expected length with the phase in doubt, the calendar's wrapped
-    // guess would contradict the ring, so those days stay untinted
+    // guess would contradict the phase bar, so those days stay untinted
     const overdueDay = info.phaseUncertain && ds >= info.cycleStart &&
       daysBetween(parseDate(info.cycleStart), d) + 1 > info.cycleLength;
     const p = day.phase && !overdueDay ? PHASES[day.phase] : null;
@@ -1958,14 +1941,22 @@ function renderWeekStrip(info) {
   document.getElementById('weekStrip').innerHTML = html;
 }
 
-// What the ring says under the day number
-function nextEventText(info) {
-  if (info.isLate) return `${info.overdueBy} day${info.overdueBy === 1 ? '' : 's'} late`;
-  if (info.isDue) return 'Period due around now';
-  if (info.phase === 'menstrual') return `Period day ${info.cycleDay}`;
-  if (info.daysToOv > 0 && info.daysToOv <= 5) return `Ovulation in ${info.daysToOv} day${info.daysToOv === 1 ? '' : 's'}`;
-  if (info.daysUntilNext === 1) return 'Period tomorrow';
-  return `Period in ${info.daysUntilNext} days`;
+// The two lines under the phase bar: where you are now, then what comes next
+function phaseBarLabels(info) {
+  const days = n => `${n} day${n === 1 ? '' : 's'}`;
+  let now = '', next = '';
+  if (info.isLate) now = `${days(info.overdueBy)} late`;
+  else if (info.isDue) now = 'Period due around now';
+  else {
+    if (info.phase === 'menstrual') now = `Period day ${info.cycleDay}`;
+    else if (info.phase === 'ovulatory') now = 'Ovulation window';
+    next = info.daysToOv > 0
+      ? `Ovulation in ${days(info.daysToOv)}`
+      : (info.daysUntilNext === 1 ? 'Period tomorrow' : `Period in ${days(info.daysUntilNext)}`);
+    // Follicular has nothing of its own to say, so it shows both coming events
+    if (!now && info.daysToOv > 0) now = next, next = `Period in ${days(info.daysUntilNext)}`;
+  }
+  return [now, next].filter(Boolean).map(t => `<span>${t}</span>`).join('');
 }
 
 // ─── Story bubbles ───
@@ -2098,32 +2089,33 @@ function updateToday() {
   renderFunStats();
 
   if (!info) {
-    // An empty ring with the prompt inside, waiting for a first period date
+    // An empty grey bar under the prompt, waiting for a first period date
     details.style.display = 'none';
     document.getElementById('todayTagline').hidden = false;
     document.getElementById('weekStrip').innerHTML = '';
-    document.getElementById('cycleRingSvg').innerHTML =
-      '<circle cx="120" cy="120" r="100" fill="none" stroke="var(--border)" stroke-width="14"/>';
+    document.getElementById('phaseBar').innerHTML = '<i style="flex:1;background:var(--border)"></i>';
+    document.getElementById('phaseBarLabels').innerHTML = '';
     document.getElementById('todayDayCount').textContent = '';
-    document.getElementById('cycleRingDay').textContent = '';
+    document.getElementById('cycleDay').textContent = '';
     const name = document.getElementById('todayPhaseName');
     name.style.color = 'var(--secondary)';
     name.textContent = 'Set up your cycle';
-    document.getElementById('cycleRingNext').textContent = '';
     document.getElementById('todayTagline').innerHTML =
       'Go to <span onclick="showPage(\'setup\')" style="text-decoration:underline;cursor:pointer;">My Cycle</span> to log your last period date.';
     return;
   }
   details.style.display = '';
-  // The ring says it; the tagline is only the setup prompt now
+  // The bar says it; the tagline is only the setup prompt now
   document.getElementById('todayTagline').hidden = true;
 
   renderWeekStrip(info);
-  renderCycleRing(info);
+  renderPhaseBar(info);
+  // Today's date heads the bar, flagged when the cycle day is only an estimate
+  const dateLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById('todayDayCount').textContent =
-    info.isPredicted && !info.isOverdue ? 'Estimated' : '';
-  document.getElementById('cycleRingDay').textContent = info.cycleDay;
-  document.getElementById('cycleRingNext').textContent = nextEventText(info);
+    dateLabel + (info.isPredicted && !info.isOverdue ? ' · estimated' : '');
+  document.getElementById('cycleDay').textContent = `Day ${info.cycleDay}`;
+  document.getElementById('phaseBarLabels').innerHTML = phaseBarLabels(info);
 
   // Past the grace window Clara no longer knows which phase this is, so it says
   // so instead of dressing a guess up as a reading.
