@@ -1166,17 +1166,16 @@ details[open].h-section .h-section-body { margin-top: 10px; }
       <!-- Journal is a quick check-in: tap a mood, an energy level and any
            symptoms, save. Notes, period dates and past entries open on tap. -->
       <div class="journal">
-        <div class="today-day-count" id="logDateDisplay"></div>
         <div class="journal-title">How was today?</div>
         <div class="journal-phase" id="logPhaseDisplay"></div>
 
         <div class="section-label">Mood</div>
         <div class="mood-grid">
-          <button class="mood-btn" data-mood="radiant" onclick="selectMood(this)">✨<span>Radiant</span></button>
-          <button class="mood-btn" data-mood="good" onclick="selectMood(this)">🌸<span>Good</span></button>
-          <button class="mood-btn" data-mood="neutral" onclick="selectMood(this)">🌿<span>Neutral</span></button>
-          <button class="mood-btn" data-mood="low" onclick="selectMood(this)">🌧<span>Low</span></button>
           <button class="mood-btn" data-mood="difficult" onclick="selectMood(this)">🌑<span>Rough</span></button>
+          <button class="mood-btn" data-mood="low" onclick="selectMood(this)">🌧<span>Low</span></button>
+          <button class="mood-btn" data-mood="neutral" onclick="selectMood(this)">🌿<span>Neutral</span></button>
+          <button class="mood-btn" data-mood="good" onclick="selectMood(this)">🌸<span>Good</span></button>
+          <button class="mood-btn" data-mood="radiant" onclick="selectMood(this)">✨<span>Radiant</span></button>
         </div>
 
         <div class="section-label">Energy</div>
@@ -1184,7 +1183,6 @@ details[open].h-section .h-section-body { margin-top: 10px; }
 
         <div class="section-label">Symptoms</div>
         <div class="symptom-grid" id="symptomGrid"></div>
-        <button class="journal-link" id="symptomMoreBtn" onclick="toggleMoreSymptoms()">More symptoms</button>
 
         <div id="painSection" style="display:none;">
           <div class="section-label">How bad were the cramps?</div>
@@ -1202,24 +1200,9 @@ details[open].h-section .h-section-body { margin-top: 10px; }
         <button class="journal-save" onclick="saveLog()">Save</button>
 
         <div class="journal-links">
-          <button class="journal-link" onclick="togglePeriodLogger()">Log a period</button>
           <button class="journal-link" id="historyBtn" onclick="toggleHistory()">Past entries</button>
         </div>
 
-        <!-- Period logger panel -->
-        <div id="periodLoggerPanel" class="card" style="display:none;margin-top:12px;text-align:left;">
-          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-            <div>
-              <label class="form-label">Started</label>
-              <input class="setup-input" type="date" id="periodStartInput" style="width:100%;">
-            </div>
-            <div>
-              <label class="form-label">Ended <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optional)</span></label>
-              <input class="setup-input" type="date" id="periodEndInput" style="width:100%;">
-            </div>
-            <button class="btn-primary" onclick="addPeriodEntry('periodStartInput','periodEndInput')" style="padding:12px 16px;">Add</button>
-          </div>
-        </div>
       </div>
 
       <!-- Past entries, opened from the link above -->
@@ -2165,39 +2148,17 @@ function updateToday() {
 let selectedMood = null;
 let selectedSymptoms = [];
 let selectedEnergy = null;   // stored on the old 1-10 scale, picked as 1-5 taps
-let showAllSymptoms = false;
 
 const SYMPTOMS = [
   'Cramps', 'Bloating', 'Headache', 'Breast tenderness', 'Back pain', 'Acne',
   'Food cravings', 'Brain fog', 'Heightened senses', 'High libido', 'Fatigue',
   'Anxious', 'Irritability', 'Motivation spike', 'Vivid dreams',
 ];
-const SYMPTOM_SHORTLIST = 6;
 const ENERGY_LEVELS = ['Very low', 'Low', 'Okay', 'Good', 'High'];
 
-// The six symptoms logged most often (ties keep the list order), so the ones
-// that matter to you are the ones on screen
-function symptomShortlist() {
-  const counts = {};
-  Object.values(state.logs || {}).forEach(l => (l.symptoms || []).forEach(x => counts[x] = (counts[x] || 0) + 1));
-  return [...SYMPTOMS].sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).slice(0, SYMPTOM_SHORTLIST);
-}
-
 function renderSymptoms() {
-  const shortlist = symptomShortlist();
-  // Anything already ticked stays visible even when it isn't on the shortlist
-  const shown = showAllSymptoms ? SYMPTOMS
-    : SYMPTOMS.filter(x => shortlist.includes(x) || selectedSymptoms.includes(x));
-  document.getElementById('symptomGrid').innerHTML = shown.map(x =>
+  document.getElementById('symptomGrid').innerHTML = SYMPTOMS.map(x =>
     `<button class="symptom-chip${selectedSymptoms.includes(x) ? ' selected' : ''}" onclick="toggleSymptom(this)">${x}</button>`).join('');
-  const more = document.getElementById('symptomMoreBtn');
-  more.hidden = shown.length === SYMPTOMS.length && !showAllSymptoms;
-  more.textContent = showAllSymptoms ? 'Fewer symptoms' : 'More symptoms';
-}
-
-function toggleMoreSymptoms() {
-  showAllSymptoms = !showAllSymptoms;
-  renderSymptoms();
 }
 
 function renderEnergy() {
@@ -2227,16 +2188,17 @@ function toggleHistory() {
 }
 
 function updateLogPage() {
-  document.getElementById('logDateDisplay').textContent = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
   const info = getCurrentCycleInfo();
-  // Naming a phase next to "period 9 days late" would contradict itself, so the
-  // Journal header drops the phase once it is uncertain.
+  // One line under the title: the date, then the phase and cycle day. Naming a
+  // phase next to "period 9 days late" would contradict itself, so the phase
+  // drops out once it is uncertain.
+  const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const phaseLine = document.getElementById('logPhaseDisplay');
   phaseLine.style.color = info && !info.phaseUncertain ? PHASES[info.phase].color : 'var(--muted)';
-  phaseLine.textContent = !info ? ''
+  phaseLine.textContent = !info ? date
     : info.phaseUncertain
-      ? `Day ${info.cycleDay} · period late`
-      : `${PHASES[info.phase].name} · day ${info.cycleDay}`;
+      ? `${date} · day ${info.cycleDay}, period late`
+      : `${date} · ${PHASES[info.phase].name} day ${info.cycleDay}`;
 
   // Rebuild the form from today's stored log, so nothing carries over
   // from the last day logged in this session
@@ -2248,7 +2210,6 @@ function updateLogPage() {
   });
 
   selectedSymptoms = existing.symptoms ? [...existing.symptoms] : [];
-  showAllSymptoms = false;
   renderSymptoms();
 
   selectedEnergy = existing.energy || null;
@@ -2261,7 +2222,6 @@ function updateLogPage() {
 
   document.getElementById('logNotes').value = existing.notes || '';
   toggleNotes(!!existing.notes);
-  document.getElementById('periodLoggerPanel').style.display = 'none';
   document.getElementById('logPanel-history').style.display = 'none';
   document.getElementById('historyBtn').textContent = 'Past entries';
 }
@@ -2328,16 +2288,6 @@ function toggleSetupAdd(open) {
   document.getElementById('setupAddForm').hidden = !open;
   document.getElementById('setupAddBtn').hidden = open;
   if (open) document.getElementById('setupPeriodStart').value = today();
-}
-
-function togglePeriodLogger() {
-  const panel = document.getElementById('periodLoggerPanel');
-  const isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) {
-    // Default to today
-    document.getElementById('periodStartInput').value = today();
-  }
 }
 
 // The period the editor under the calendar is pointed at: the latest one on
@@ -2473,12 +2423,6 @@ function addPeriodEntry(startInputId, endInputId) {
   showToast('Period saved ✓');
 }
 
-function addPeriodStart() {
-  const val = document.getElementById('periodStartInput')?.value;
-  if (!val) { showToast('Please pick a date first'); return; }
-  addPeriodEntry('periodStartInput', null);
-}
-
 function removePeriodStart(dateStr) {
   state.periods = state.periods.filter(p => p.start !== dateStr);
   normalisePeriods({ repointLastPeriod: true });
@@ -2570,11 +2514,8 @@ function renderPeriodListInto(elId) {
 
 // ─── CALENDAR ───
 function initPeriodInputs() {
-  const t = today();
-  ['setupPeriodStart','periodStartInput'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el && !el.value) el.value = t;
-  });
+  const el = document.getElementById('setupPeriodStart');
+  if (el && !el.value) el.value = today();
 }
 
 // Which phase a calendar date falls in, whether that is a prediction, and
