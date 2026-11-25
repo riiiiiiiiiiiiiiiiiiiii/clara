@@ -43,6 +43,32 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ─── MOTION ───
+   Pages, views and anything that opens ease in with a short fade and lift;
+   closing eases out through .clara-leaving (added by easeOut() in the script). */
+@keyframes clara-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes clara-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4px); } }
+.page.active, #todayView, #logPanel-entry, #insightsPhaseView, #insightsHormoneView {
+  animation: clara-in 0.34s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.story-sheet, .feel-more, .hormone-row.open .hormone-desc, .cal-day-detail, #logPanel-history,
+#setupAddForm, #currentPeriodForm, #phaseLegend, .journal-notes, #painSection, #insightContent,
+#hormoneCardContent, details[open] > :not(summary) {
+  animation: clara-in 0.26s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.clara-leaving { animation: clara-out 0.18s cubic-bezier(0.4, 0, 1, 1) both !important; }
+
+/* A soft press on everything you tap */
+button, .nav-item, .cal-day, .mood-btn, .symptom-chip, .feel-tile, .energy-btn, .phase-chip, .seg-btn,
+.story-btn, .hormone-row, summary {
+  transition: transform 0.15s ease, background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
+}
+button:active, .nav-item:active, .cal-day:active, .story-btn:active .story-orb { transform: scale(0.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
 /* Headings and labels for screen readers, off-screen but not hidden from them. */
 .sr-only {
   position: absolute;
@@ -1884,6 +1910,40 @@ function updateSidebar() {
   }
 }
 
+// ─── MOTION ───
+// Things ease in through CSS (see "Motion" in the stylesheet) as they appear.
+// Closing needs a moment before the element is actually hidden, so every
+// collapse goes through easeOut().
+const EASE_OUT_MS = 180;
+const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+function easeOut(el, done) {
+  if (!el || reducedMotion()) { done(); return; }
+  el.classList.add('clara-leaving');
+  setTimeout(() => { el.classList.remove('clara-leaving'); done(); }, EASE_OUT_MS);
+}
+
+// Plays the ease-in again on something already on screen whose content just
+// changed, such as the story sheet switching to another story
+function replayIn(el) {
+  if (!el || reducedMotion()) return;
+  el.style.animation = 'none';
+  void el.offsetHeight;
+  el.style.animation = '';
+}
+
+// <details> open with the CSS ease-in; closing waits for the ease-out
+document.addEventListener('click', e => {
+  const summary = e.target.closest('details > summary');
+  if (!summary) return;
+  const d = summary.parentElement;
+  if (!d.open) return;
+  e.preventDefault();
+  const body = [...d.children].filter(c => c !== summary);
+  body.forEach(c => c.classList.add('clara-leaving'));
+  setTimeout(() => { d.open = false; body.forEach(c => c.classList.remove('clara-leaving')); }, reducedMotion() ? 0 : EASE_OUT_MS);
+});
+
 // ─── TODAY PAGE ───
 // Today leads with a picture: a phase bar for where you are in the cycle. The
 // long reads that used to fill the page are still all here, behind story
@@ -1965,13 +2025,14 @@ function openStory(i) {
   sheet.style.background = s.light;
   sheet.style.border = `1px solid ${s.mid}`;
   sheet.innerHTML = `<button class="story-close" onclick="closeStory()" aria-label="Close">✕</button>${s.html}`;
-  sheet.hidden = false;
+  if (sheet.hidden) sheet.hidden = false; else replayIn(sheet);
 }
 
 function closeStory() {
   openStoryIndex = -1;
-  document.getElementById('storySheet').hidden = true;
   document.querySelectorAll('#storyRow .story-btn').forEach(b => b.setAttribute('aria-selected', 'false'));
+  const sheet = document.getElementById('storySheet');
+  easeOut(sheet, () => { if (openStoryIndex === -1) sheet.hidden = true; });
 }
 
 function storyBody(badge, title, body, p) {
@@ -2000,10 +2061,10 @@ function toggleFeel(i) {
   const more = document.getElementById('feelMore');
   const wasOpen = tiles[i].getAttribute('aria-pressed') === 'true';
   tiles.forEach(t => t.setAttribute('aria-pressed', 'false'));
-  if (wasOpen) { more.hidden = true; return; }
+  if (wasOpen) { easeOut(more, () => { more.hidden = true; }); return; }
   tiles[i].setAttribute('aria-pressed', 'true');
   more.textContent = feelTiles[i].text;
-  more.hidden = false;
+  if (more.hidden) more.hidden = false; else replayIn(more);
 }
 
 // "⚡ Energy is building..." → { icon: '⚡', text: 'Energy is building...' }
@@ -2013,7 +2074,8 @@ function splitEmojiLine(line) {
 }
 
 function toggleHormoneRow(row) {
-  row.classList.toggle('open');
+  if (!row.classList.contains('open')) { row.classList.add('open'); return; }
+  easeOut(row.querySelector('.hormone-desc'), () => row.classList.remove('open'));
 }
 
 // Everything the Today page shows once a period is late enough that the phase
@@ -2182,9 +2244,11 @@ function toggleNotes(open) {
 function toggleHistory() {
   const panel = document.getElementById('logPanel-history');
   const open = panel.style.display === 'none';
-  panel.style.display = open ? 'block' : 'none';
   document.getElementById('historyBtn').textContent = open ? 'Hide past entries' : 'Past entries';
-  if (open) { renderHistory(); panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  if (!open) { easeOut(panel, () => { panel.style.display = 'none'; }); return; }
+  panel.style.display = 'block';
+  renderHistory();
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function updateLogPage() {
@@ -2285,9 +2349,17 @@ function saveLog() {
 }
 
 function toggleSetupAdd(open) {
-  document.getElementById('setupAddForm').hidden = !open;
-  document.getElementById('setupAddBtn').hidden = open;
-  if (open) document.getElementById('setupPeriodStart').value = today();
+  const form = document.getElementById('setupAddForm');
+  const btn = document.getElementById('setupAddBtn');
+  if (open) {
+    form.hidden = false;
+    btn.hidden = true;
+    document.getElementById('setupPeriodStart').value = today();
+  } else if (!form.hidden) {
+    easeOut(form, () => { form.hidden = true; btn.hidden = false; });
+  } else {
+    btn.hidden = false;
+  }
 }
 
 // The period the editor under the calendar is pointed at: the latest one on
@@ -2300,7 +2372,8 @@ function toggleLegend() {
   if (!el || !btn) return;
   const open = el.style.display !== 'none';
   // Cleared rather than set, so the stylesheet's flex layout comes back
-  el.style.display = open ? 'none' : '';
+  if (open) easeOut(el, () => { el.style.display = 'none'; });
+  else el.style.display = '';
   // The glyph alone says nothing to a screen reader, so the label carries it
   btn.textContent = open ? '+' : '\u2212';
   btn.setAttribute('aria-label', open ? 'Show legend' : 'Hide legend');
@@ -2341,7 +2414,8 @@ function renderCurrentPeriodEditor() {
 
 function toggleCurrentPeriodEdit() {
   const form = document.getElementById('currentPeriodForm');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if (form.style.display === 'none') form.style.display = 'block';
+  else easeOut(form, () => { form.style.display = 'none'; });
 }
 
 function saveCurrentPeriodEdit() {
@@ -2607,9 +2681,17 @@ function renderStats() {
 let calSelectedDate = null;
 function selectCalDay(dateStr) {
   const panel = document.getElementById('calDayDetail');
-  if (calSelectedDate === dateStr) { calSelectedDate = null; panel.hidden = true; renderCalendar(); return; }
+  if (calSelectedDate === dateStr) {
+    calSelectedDate = null;
+    renderCalendar();
+    panel.hidden = false;  // keep it up just long enough to ease out
+    easeOut(panel, () => { if (!calSelectedDate) panel.hidden = true; });
+    return;
+  }
+  const switching = !!calSelectedDate;
   calSelectedDate = dateStr;
   renderCalendar();
+  if (switching) replayIn(panel);
 }
 
 function renderCalDayDetail() {
@@ -2732,6 +2814,8 @@ function showInsight(phase) {
       </details>
     `).join('')}
   `;
+
+  replayIn(content);
 
   // Keep the Hormones view in step with the phase just picked: open that
   // phase's lead hormone, so switching tabs shows something relevant.
@@ -4148,6 +4232,7 @@ function showHormoneCard(key) {
     </div>
     <div class="h-grid">${sectionsHTML}</div>
   `;
+  replayIn(document.getElementById('hormoneCardContent'));
 
   // Build hormone table
   const tbody = document.getElementById('hormoneTable');
